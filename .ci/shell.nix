@@ -3,9 +3,10 @@
 pkgs.mkShell {
   packages = with pkgs; [
     # build tools
-    go_1_25
+    go
     gcc
     golangci-lint
+    upx # executable compression
 
     # project tools
     just
