@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,7 +8,6 @@ import (
 	"github.com/cycloidio/gitlab-resource/features"
 	"github.com/cycloidio/gitlab-resource/internal"
 	"github.com/cycloidio/gitlab-resource/models"
-	"github.com/go-playground/validator/v10"
 	"github.com/spf13/cobra"
 )
 
@@ -74,23 +72,10 @@ func main() {
 }
 
 func check(cmd *cobra.Command, args []string) error {
-	var input models.CheckInputs
+	var input *models.Inputs
 	err := internal.ReadSourceFromStdin(cmd, &input)
 	if err != nil {
 		return err
-	}
-
-	validate := validator.New(validator.WithRequiredStructEnabled())
-	err = validate.Struct(input)
-	var validateErrs validator.ValidationErrors
-	if errors.As(err, &validateErrs) {
-		for _, e := range validateErrs {
-			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), e.Error(), e.Tag())
-		}
-
-		return errors.New("validation failed, check documentation")
-	} else if err != nil {
-		return fmt.Errorf("resource config is invalid: %w", err)
 	}
 
 	handler, err := features.NewFeatureHandler(input.Source.Feature)
@@ -98,7 +83,12 @@ func check(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	versions, err := handler.Check(&input)
+	err = handler.Validate(input)
+	if err != nil {
+		return fmt.Errorf("resource source validation failed: %w", err)
+	}
+
+	versions, err := handler.Check(input)
 	if err != nil {
 		return err
 	}
@@ -112,23 +102,15 @@ func check(cmd *cobra.Command, args []string) error {
 }
 
 func in(cmd *cobra.Command, args []string) error {
-	var input models.InInputs
+	if len(args) < 1 {
+		return fmt.Errorf("missing out directory as first argument")
+	}
+	outDir := args[0]
+
+	var input models.Inputs
 	err := internal.ReadSourceFromStdin(cmd, &input)
 	if err != nil {
 		return err
-	}
-
-	validate := validator.New(validator.WithRequiredStructEnabled())
-	err = validate.Struct(input)
-	var validateErrs validator.ValidationErrors
-	if errors.As(err, &validateErrs) {
-		for _, e := range validateErrs {
-			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), e.Error())
-		}
-
-		return errors.New("validation failed, check documentation")
-	} else if err != nil {
-		return fmt.Errorf("resource config is invalid: %w", err)
 	}
 
 	handler, err := features.NewFeatureHandler(input.Source.Feature)
@@ -136,7 +118,7 @@ func in(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	output, err := handler.In(&input)
+	output, err := handler.In(&input, outDir)
 	if err != nil {
 		return err
 	}
@@ -150,23 +132,15 @@ func in(cmd *cobra.Command, args []string) error {
 }
 
 func out(cmd *cobra.Command, args []string) error {
-	var input models.OutInputs
+	if len(args) < 1 {
+		return fmt.Errorf("missing out directory as first argument")
+	}
+	outDir := args[0]
+
+	var input models.Inputs
 	err := internal.ReadSourceFromStdin(cmd, input)
 	if err != nil {
 		return err
-	}
-
-	validate := validator.New(validator.WithRequiredStructEnabled())
-	err = validate.Struct(input)
-	var validateErrs validator.ValidationErrors
-	if errors.As(err, &validateErrs) {
-		for _, e := range validateErrs {
-			_, _ = fmt.Fprintln(cmd.ErrOrStderr(), e.Error())
-		}
-
-		return errors.New("validation failed, check documentation")
-	} else if err != nil {
-		return fmt.Errorf("resource config is invalid: %w", err)
 	}
 
 	handler, err := features.NewFeatureHandler(input.Source.Feature)
@@ -174,7 +148,7 @@ func out(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	output, err := handler.Out(&input)
+	output, err := handler.Out(&input, outDir)
 	if err != nil {
 		return err
 	}

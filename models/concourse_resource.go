@@ -1,36 +1,43 @@
 package models
 
-type CheckInput struct {
+type Inputs struct {
 	Source  Source  `json:"source"`
-	Version Version `json:"version"`
+	Version any     `json:"version"`
+	Params  *Params `json:"params,omitempty"`
 }
 
-type Version []map[string]string
-
-type InInputs struct {
-	Source  Source   `json:"source"`
-	Version Version  `json:"version"`
-	Params  InParams `json:"params"`
+type Params struct {
+	Deployments ParamDeployments `json:"deployments"`
 }
 
-type InParams struct {
+type ParamDeployments struct {
+	Action string       `json:"action"`
+	Create *ParamCreate `json:"create,omitempty"`
+	Update *ParamUpdate `json:"update,omitempty"`
 }
 
-type OutInputs struct {
-	Source  Source    `json:"source"`
-	Version Version   `json:"version"`
-	Params  OutParams `json:"params"`
+type ParamCreate struct {
+	SHA    string `json:"sha"`
+	Ref    string `json:"ref"`
+	Tag    bool   `json:"tag"`
+	Status string `json:"status"`
 }
 
-type OutParams struct{}
+type ParamUpdate struct {
+	Status string `json:"status"`
+}
 
 type Source struct {
-	Project     string               `json:"project"`
 	ProjectID   string               `json:"project_id"`
-	Environment string               `json:"environment"`
 	ServerURL   string               `json:"server_url"`
 	Feature     string               `json:"feature"`
+	Deployments *SourceDeployment    `json:"deployments"`
 	Auth        SourceAuthentication `json:"auth"`
+}
+
+type SourceDeployment struct {
+	Status      *string `json:"status,omitempty"`
+	Environment *string `json:"environment,omitempty"`
 }
 
 type SourceAuthentication struct {
@@ -38,13 +45,13 @@ type SourceAuthentication struct {
 }
 
 type Output struct {
-	Version  Version   `json:"version"`
+	Version  any       `json:"version"`
 	Metadata Metadatas `json:"metadata"`
 }
 
 type Metadatas []Metadata
 type Metadata struct {
-	Key   string `json:"key"`
+	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 

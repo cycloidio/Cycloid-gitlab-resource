@@ -20,5 +20,5 @@ build-release:
 build-docker:
     docker build . --tag cycloid/gitlab-resource:latest
 
-test-docker: build-docker
-    docker inspect docker.io/cycloid/gitlab-resource:latest | jq -r .[0].Size
+test-docker-create: build-docker
+    docker run -it --rm $(pwd):/code -w /code  docker.io/cycloid/gitlab-resource:latest /opt/resource/check < create.json
