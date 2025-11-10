@@ -2,10 +2,10 @@ package features
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/cycloidio/gitlab-resource/features/deployments"
-	"github.com/cycloidio/gitlab-resource/models"
 )
 
 var (
@@ -15,16 +15,15 @@ var (
 )
 
 type Feature interface {
-	Validate(input *models.Inputs) error
-	Check(input *models.Inputs) (any, error)
-	In(input *models.Inputs, outDir string) (*models.Output, error)
-	Out(input *models.Inputs, outDir string) (*models.Output, error)
+	Check() error
+	In(outDir string) error
+	Out(outDir string) error
 }
 
-func NewFeatureHandler(feature string) (Feature, error) {
+func NewFeatureHandler(stdout, stderr io.Writer, feature string, input []byte) (Feature, error) {
 	switch strings.ToLower(feature) {
 	case "deployments":
-		return deployments.NewHandler(), nil
+		return deployments.NewHandler(stdout, stderr, input)
 	default:
 		return nil, fmt.Errorf("feature %q does not exists, available ones are: %v", feature, AvailableFeatures)
 	}

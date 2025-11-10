@@ -1,33 +1,21 @@
 package deployments
 
 import (
+	"encoding/json"
 	"fmt"
-	"slices"
-
-	"github.com/cycloidio/gitlab-resource/models"
-	gitlab "gitlab.com/gitlab-org/api/client-go"
+	"io"
 )
 
-func GetVersion(deployments []*gitlab.Deployment, input *models.Inputs) (any, error) {
-	deploymentsLen := len(deployments)
-	if deploymentsLen == 0 {
-		return []any{}, nil
+func OutputJSON(stdout io.Writer, output any) error {
+	data, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to serialize output to JSON: %w", err)
 	}
 
-	if input.Version == nil {
-		return deployments[deploymentsLen-1], nil
+	_, err = stdout.Write(data)
+	if err != nil {
+		return fmt.Errorf("failed to output to stdout: %w", err)
 	}
 
-	deploymentVersion, ok := input.Version.(*gitlab.Deployment)
-	if !ok {
-		return nil, fmt.Errorf("cannot read current version %v", input.Version)
-	}
-
-	if i := slices.IndexFunc(deployments, func(d *gitlab.Deployment) bool {
-		return d.ID == deploymentVersion.ID
-	}); i != -1 {
-		return deployments[i:], nil
-	} else {
-		return deployments, nil
-	}
+	return nil
 }

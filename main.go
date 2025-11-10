@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/cycloidio/gitlab-resource/features"
-	"github.com/cycloidio/gitlab-resource/internal"
 	"github.com/cycloidio/gitlab-resource/models"
 	"github.com/spf13/cobra"
 )
@@ -31,36 +33,27 @@ func main() {
 			//
 			// This trick allow to make a very small docker image, with only one binary
 			// and the scripts with shebangs.
-			action := filepath.Base(os.Args[1])
+			var action string
+			if strings.HasPrefix(args[0], "/opt/resource") {
+				action = filepath.Base(args[0])
+			} else {
+				action = args[0]
+			}
+
 			switch action {
 			case "check":
-				return check(cmd, args[1:])
-			case "in":
-				return in(cmd, args[1:])
-			case "out":
-				return out(cmd, args[1:])
+				return run(action, cmd, nil)
+			case "in", "out":
+				if len(args) < 2 {
+					return fmt.Errorf("missing out directory argument for action %q", action)
+				}
+
+				return run(action, cmd, &args[1])
 			default:
 				return fmt.Errorf("invalid command %q, only check, in and out are allowed", action)
 			}
 		},
 	}
-
-	rootCmd.AddCommand(
-		&cobra.Command{
-			Use:  "check",
-			RunE: check,
-		},
-		&cobra.Command{
-			Use:  "in",
-			RunE: in,
-			Args: cobra.ExactArgs(2),
-		},
-		&cobra.Command{
-			Use:  "out",
-			RunE: out,
-			Args: cobra.ExactArgs(2),
-		},
-	)
 
 	err := rootCmd.Execute()
 	if err != nil {
@@ -71,126 +64,43 @@ func main() {
 	os.Exit(0)
 }
 
-func check(cmd *cobra.Command, args []string) error {
-	var input *models.Inputs
-	err := internal.ReadSourceFromStdin(cmd, &input)
+func run(action string, cmd *cobra.Command, outDir *string) error {
+	stdin := cmd.InOrStdin()
+	stdout := cmd.OutOrStdout()
+	stderr := cmd.OutOrStdout()
+
+	in, err := io.ReadAll(stdin)
+	if err != nil {
+		return fmt.Errorf("failed to read source metadata from stdin: %w", err)
+	}
+
+	var input models.Input
+	err = json.Unmarshal(in, &input)
+	if err != nil {
+		return fmt.Errorf("failed to parse source data from JSON: %v: %w", string(in), err)
+	}
+
+	handler, err := features.NewFeatureHandler(stdout, stderr, input.Source.Feature, in)
 	if err != nil {
 		return err
 	}
 
-	handler, err := features.NewFeatureHandler(input.Source.Feature)
-	if err != nil {
-		return err
-	}
+	switch action {
+	case "check":
+		return handler.Check()
+	case "in":
+		if outDir == nil {
+			return fmt.Errorf("outDir argument is missing")
+		}
 
-	err = handler.Validate(input)
-	if err != nil {
-		return fmt.Errorf("resource source validation failed: %w", err)
-	}
+		return handler.In(*outDir)
+	case "out":
+		if outDir == nil {
+			return fmt.Errorf("outDir argument is missing")
+		}
 
-	versions, err := handler.Check(input)
-	if err != nil {
-		return err
+		return handler.Out(*outDir)
+	default:
+		return fmt.Errorf("invalid action %q, allowed ones are: check, in, out", action)
 	}
-
-	err = internal.PrintJSON(cmd.OutOrStdout(), versions)
-	if err != nil {
-		return fmt.Errorf("failed to output result to stdout: %w", err)
-	}
-
-	return nil
 }
-
-func in(cmd *cobra.Command, args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("missing out directory as first argument")
-	}
-	outDir := args[0]
-
-	var input models.Inputs
-	err := internal.ReadSourceFromStdin(cmd, &input)
-	if err != nil {
-		return err
-	}
-
-	handler, err := features.NewFeatureHandler(input.Source.Feature)
-	if err != nil {
-		return err
-	}
-
-	output, err := handler.In(&input, outDir)
-	if err != nil {
-		return err
-	}
-
-	err = internal.PrintJSON(cmd.OutOrStdout(), output)
-	if err != nil {
-		return fmt.Errorf("failed to output result to stdout: %w", err)
-	}
-
-	return nil
-}
-
-func out(cmd *cobra.Command, args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("missing out directory as first argument")
-	}
-	outDir := args[0]
-
-	var input models.Inputs
-	err := internal.ReadSourceFromStdin(cmd, input)
-	if err != nil {
-		return err
-	}
-
-	handler, err := features.NewFeatureHandler(input.Source.Feature)
-	if err != nil {
-		return err
-	}
-
-	output, err := handler.Out(&input, outDir)
-	if err != nil {
-		return err
-	}
-
-	err = internal.PrintJSON(cmd.OutOrStdout(), output)
-	if err != nil {
-		return fmt.Errorf("failed to output result to stdout: %w", err)
-	}
-
-	return nil
-}
-
-/*
-$BUILD_ID
-
-	The internal identifier for the build. Right now this is numeric, but it may become a UUID in the future. Treat it as an absolute reference to the build.
-
-$BUILD_NAME
-
-	The build number within the build's job.
-
-$BUILD_JOB_NAME
-
-	The name of the build's job.
-
-$BUILD_PIPELINE_NAME
-
-	The name of the pipeline that the build's job lives in.
-
-$BUILD_PIPELINE_INSTANCE_VARS
-
-	The instance vars of the instanced pipeline that the build's job lives in, serialized as JSON. See Grouping Pipelines for a definition of instanced pipelines.
-
-$BUILD_TEAM_NAME
-
-	The team that the build belongs to.
-
-$BUILD_CREATED_BY
-
-	The username that created the build. By default it is not available. See expose_build_created_by for how to opt in. This metadata field is not made available to the get step.
-
-$ATC_EXTERNAL_URL
-
-	The public URL for your ATC; useful for debugging.
-*/

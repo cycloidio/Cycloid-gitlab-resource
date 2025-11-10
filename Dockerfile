@@ -1,7 +1,7 @@
 FROM golang:1.25 AS build
 
 # Install required packages
-RUN apt update && apt install -y gcc upx
+RUN apt update && apt install -y gcc upx ca-certificates
 
 # Create a non-root user for the runtime
 RUN groupadd -f -g 1000 gitlab && useradd -u 1000 -g gitlab gitlab
@@ -19,4 +19,5 @@ FROM scratch
 WORKDIR /opt/resource
 USER gitlab:gitlab
 COPY --from=build /etc/passwd /etc/shadow /etc/group /etc/
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build --chown=gitlab:gitlab /build/gitlab-resource /build/scripts/* /opt/resource/

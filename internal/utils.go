@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/spf13/cobra"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
@@ -16,24 +15,6 @@ import (
 func DetectStdinInput() bool {
 	stats, _ := os.Stdin.Stat()
 	return (stats.Mode() & os.ModeCharDevice) == 0
-}
-
-func ReadSourceFromStdin(cmd *cobra.Command, data any) error {
-	if !DetectStdinInput() {
-		return fmt.Errorf("did not found any stdin input, check documentation.")
-	}
-
-	stdin, err := io.ReadAll(cmd.InOrStdin())
-	if err != nil {
-		return fmt.Errorf("failed to read source metadata from stdin: %w", err)
-	}
-
-	err = json.Unmarshal(stdin, data)
-	if err != nil {
-		return fmt.Errorf("failed to parse source data from JSON: %v: %w", string(stdin), err)
-	}
-
-	return nil
 }
 
 func PrintJSON(w io.Writer, input any) error {

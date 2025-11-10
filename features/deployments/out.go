@@ -1,0 +1,167 @@
+package deployments
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"strconv"
+
+	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
+	"github.com/cycloidio/gitlab-resource/internal"
+	"github.com/cycloidio/gitlab-resource/models"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
+)
+
+func (h Handler) Out(outDir string) error {
+	client, err := gitlabclient.NewGitlabClient(&gitlabclient.GitlabConfig{
+		Token: h.cfg.Source.Token,
+		Url:   h.cfg.Source.ServerURL,
+	})
+	if err != nil {
+		return err
+	}
+
+	switch h.cfg.Params.Action {
+	case "create":
+		deploy, _, err := client.Deployments.CreateProjectDeployment(
+			h.cfg.Source.ProjectID, &gitlab.CreateProjectDeploymentOptions{
+				Environment: h.cfg.Source.Environment,
+				SHA:         h.cfg.Params.SHA,
+				Ref:         h.cfg.Params.Ref,
+				Tag:         h.cfg.Params.Tag,
+				Status:      (*gitlab.DeploymentStatusValue)(&h.cfg.Params.Status),
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create deployment: %w", err)
+		}
+
+		deployJSON, err := json.MarshalIndent(deploy, "", "  ")
+		if err != nil {
+			// If we fail to write the JSON, we should still try to send the metadata JSON
+			fmt.Fprintf(h.stderr, "failed to serialize deployment payload to JSON: %s\n", err.Error())
+		}
+
+		err = os.WriteFile(outDir+"/metadata.json", deployJSON, 0666)
+		if err != nil {
+			// If we fail to write the JSON, we should still try to send the metadata JSON
+			fmt.Fprintf(h.stderr, "failed to write metadata to %q: %s\n", outDir+"/metadata.json", err.Error())
+		}
+		metadata := models.Metadatas{
+			{Name: "id", Value: strconv.FormatInt(int64(deploy.ID), 10)},
+			{Name: "iid", Value: strconv.FormatInt(int64(deploy.IID), 10)},
+			{Name: "status", Value: deploy.Status},
+			{Name: "ref", Value: deploy.Ref},
+			{Name: "sha", Value: deploy.SHA},
+			{Name: "deployable_name", Value: deploy.Deployable.Name},
+			{Name: "deployable_ref", Value: deploy.Deployable.Ref},
+			{Name: "deployable_stage", Value: deploy.Deployable.Stage},
+			{Name: "deployable_status", Value: deploy.Deployable.Status},
+			{Name: "deployable_tag", Value: strconv.FormatBool(deploy.Deployable.Tag)},
+			{Name: "deployable_pipeline_id", Value: strconv.FormatInt(int64(deploy.Deployable.Pipeline.ID), 10)},
+			{Name: "deployable_pipeline_ref", Value: deploy.Deployable.Pipeline.Ref},
+			{Name: "deployable_pipeline_sha", Value: deploy.Deployable.Pipeline.SHA},
+			{Name: "deployable_pipeline_status", Value: deploy.Deployable.Pipeline.Status},
+			{Name: "environment_id", Value: strconv.FormatInt(int64(deploy.Environment.ID), 10)},
+			{Name: "environment_name", Value: deploy.Environment.Name},
+			{Name: "environment_external_url", Value: deploy.Environment.ExternalURL},
+		}
+
+		if deploy.Deployable.Commit != nil {
+			metadata = append(metadata, models.Metadatas{
+				{Name: "deployable_commit_author_name", Value: deploy.Deployable.Commit.AuthorName},
+				{Name: "deployable_commit_author_email", Value: deploy.Deployable.Commit.AuthorEmail},
+				{Name: "deployable_commit_title", Value: deploy.Deployable.Commit.Title},
+				{Name: "deployable_commit_message", Value: deploy.Deployable.Commit.Message},
+				{Name: "deployable_commit_short_id", Value: deploy.Deployable.Commit.ShortID},
+			}...)
+		}
+
+		output := &models.Output{
+			Version:  deploy,
+			Metadata: metadata,
+		}
+		return OutputJSON(h.stdout, output)
+	case "update":
+		updatedDeploy, _, err := client.Deployments.UpdateProjectDeployment(
+			h.cfg.Source.ProjectID, h.cfg.Version.ID, &gitlab.UpdateProjectDeploymentOptions{
+				Status: (*gitlab.DeploymentStatusValue)(&h.cfg.Params.Status),
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to update deployment with id %q: %w", h.cfg.Version.ID, err)
+		}
+
+		user, err := internal.GetUser(h.cfg.Version.User, client)
+		if err != nil {
+			return err
+		}
+
+		deployJSON, err := json.MarshalIndent(updatedDeploy, "", "  ")
+		if err != nil {
+			// If we fail to write the JSON, we should still try to send the metadata JSON
+			fmt.Fprintf(os.Stderr, "failed to serialize deployment payload to JSON: %s\n", err.Error())
+		}
+
+		err = os.WriteFile(outDir+"/metadata.json", deployJSON, 0666)
+		if err != nil {
+			// If we fail to write the JSON, we should still try to send the metadata JSON
+			fmt.Fprintf(os.Stderr, "failed to write metadata to %q: %s\n", outDir+"/metadata.json", err.Error())
+		}
+
+		metadata := models.Metadatas{
+			{Name: "id", Value: strconv.FormatInt(int64(updatedDeploy.ID), 10)},
+			{Name: "iid", Value: strconv.FormatInt(int64(updatedDeploy.IID), 10)},
+			{Name: "status", Value: updatedDeploy.Status},
+			{Name: "ref", Value: updatedDeploy.Ref},
+			{Name: "sha", Value: updatedDeploy.SHA},
+			{Name: "deployable_name", Value: updatedDeploy.Deployable.Name},
+			{Name: "deployable_ref", Value: updatedDeploy.Deployable.Ref},
+			{Name: "deployable_stage", Value: updatedDeploy.Deployable.Stage},
+			{Name: "deployable_status", Value: updatedDeploy.Deployable.Status},
+			{Name: "deployable_tag", Value: strconv.FormatBool(updatedDeploy.Deployable.Tag)},
+			{Name: "deployable_pipeline_id", Value: strconv.FormatInt(int64(updatedDeploy.Deployable.Pipeline.ID), 10)},
+			{Name: "deployable_pipeline_ref", Value: updatedDeploy.Deployable.Pipeline.Ref},
+			{Name: "deployable_pipeline_sha", Value: updatedDeploy.Deployable.Pipeline.SHA},
+			{Name: "deployable_pipeline_status", Value: updatedDeploy.Deployable.Pipeline.Status},
+			{Name: "environment_id", Value: strconv.FormatInt(int64(updatedDeploy.Environment.ID), 10)},
+			{Name: "environment_name", Value: updatedDeploy.Environment.Name},
+			{Name: "environment_external_url", Value: updatedDeploy.Environment.ExternalURL},
+			{Name: "user_username", Value: user.Username},
+			{Name: "user_name", Value: user.Name},
+			{Name: "user_email", Value: user.Email},
+			{Name: "user_public_email", Value: user.PublicEmail},
+		}
+
+		if updatedDeploy.Deployable.Commit != nil {
+			metadata = append(metadata, models.Metadatas{
+				{Name: "deployable_commit_author_name", Value: updatedDeploy.Deployable.Commit.AuthorName},
+				{Name: "deployable_commit_author_email", Value: updatedDeploy.Deployable.Commit.AuthorEmail},
+				{Name: "deployable_commit_title", Value: updatedDeploy.Deployable.Commit.Title},
+				{Name: "deployable_commit_message", Value: updatedDeploy.Deployable.Commit.Message},
+				{Name: "deployable_commit_short_id", Value: updatedDeploy.Deployable.Commit.ShortID},
+			}...)
+		}
+
+		output := &models.Output{
+			Version:  updatedDeploy,
+			Metadata: metadata,
+		}
+		return OutputJSON(h.stdout, output)
+
+	case "delete":
+		_, err := client.Deployments.DeleteProjectDeployment(h.cfg.Source.ProjectID, h.cfg.Version.ID, nil)
+		if err != nil {
+			return fmt.Errorf("failed to update deployment with id %q: %w", h.cfg.Version.ID, err)
+		}
+
+		output := &models.Output{
+			Version:  nil,
+			Metadata: models.Metadatas{},
+		}
+		return OutputJSON(h.stdout, output)
+
+	default:
+		return fmt.Errorf("invalid params.action parameter, accepted values are: create, update, delete")
+	}
+}

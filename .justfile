@@ -9,7 +9,10 @@ lint:
 watch *cmd:
     watchexec -w . -w .justfile -e go -c -- just {{ cmd }}
 
-build:
+test:
+    go test ./...
+
+build: test
     go build
 
 build-release:
@@ -20,5 +23,8 @@ build-release:
 build-docker:
     docker build . --tag cycloid/gitlab-resource:latest
 
+test-docker-check: build-docker
+    cat check_delta.json | docker run -i -a STDIN -a STDERR -a STDOUT --rm -v "$(pwd):/code" -w /code cycloid/gitlab-resource:latest /opt/resource/check
+
 test-docker-create: build-docker
-    docker run -it --rm $(pwd):/code -w /code  docker.io/cycloid/gitlab-resource:latest /opt/resource/check < create.json
+    cat create.json | docker run -i -a STDIN -a STDERR -a STDOUT --rm -v "$(pwd):/code" -w /code cycloid/gitlab-resource:latest /opt/resource/out .
