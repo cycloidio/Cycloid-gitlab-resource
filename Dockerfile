@@ -17,7 +17,10 @@ RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o gitlab-resource && \
 FROM scratch
 
 WORKDIR /opt/resource
-USER gitlab:gitlab
-COPY --from=build /etc/passwd /etc/shadow /etc/group /etc/
+
+# non root user seems to be an issue :(
+# USER gitlab:gitlab
+# COPY --from=build /etc/passwd /etc/shadow /etc/group /etc/
+
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build --chown=gitlab:gitlab /build/gitlab-resource /build/scripts/* /opt/resource/
