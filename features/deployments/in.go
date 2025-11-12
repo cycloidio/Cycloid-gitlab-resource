@@ -31,45 +31,37 @@ func (h Handler) In(outDir string) error {
 		return err
 	}
 
-	user, err := internal.GetUser(h.cfg.Version.User, client)
-	if err != nil {
-		return err
+	var metdatas = make(models.Metadatas, len(h.cfg.Version))
+	i := 0
+	for k, v := range h.cfg.Version {
+		metdatas[0] = models.Metadata{Name: k, Value: v}
+		i++
+	}
+
+	if userIDStr, ok := h.cfg.Version["user_id"]; ok {
+		userID, err := strconv.ParseInt(userIDStr, 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse user id %q: %w", userIDStr, err)
+		}
+
+		user, err := internal.GetUser(int(userID), client)
+		if err != nil {
+			return err
+		}
+
+		metdatas = append(metdatas,
+			models.Metadatas{
+				{Name: "user_username", Value: user.Username},
+				{Name: "user_name", Value: user.Name},
+				{Name: "user_email", Value: user.Email},
+				{Name: "user_public_email", Value: user.PublicEmail},
+			}...,
+		)
 	}
 
 	output := &models.Output{
-		Version: h.cfg.Version,
-		Metadata: models.Metadatas{
-			{Name: "id", Value: strconv.FormatInt(int64(h.cfg.Version.ID), 10)},
-			{Name: "iid", Value: strconv.FormatInt(int64(h.cfg.Version.IID), 10)},
-			{Name: "status", Value: h.cfg.Version.Status},
-			{Name: "ref", Value: h.cfg.Version.Ref},
-			{Name: "sha", Value: h.cfg.Version.SHA},
-			{Name: "deployable_name", Value: h.cfg.Version.Deployable.Name},
-			{Name: "deployable_ref", Value: h.cfg.Version.Deployable.Ref},
-			{Name: "deployable_stage", Value: h.cfg.Version.Deployable.Stage},
-			{Name: "deployable_started_at", Value: h.cfg.Version.Deployable.StartedAt.String()},
-			{Name: "deployable_status", Value: h.cfg.Version.Deployable.Status},
-			{Name: "deployable_tag", Value: strconv.FormatBool(h.cfg.Version.Deployable.Tag)},
-			{Name: "deployable_pipeline_id", Value: strconv.FormatInt(int64(h.cfg.Version.Deployable.Pipeline.ID), 10)},
-			{Name: "deployable_pipeline_ref", Value: h.cfg.Version.Deployable.Pipeline.Ref},
-			{Name: "deployable_pipeline_sha", Value: h.cfg.Version.Deployable.Pipeline.SHA},
-			{Name: "deployable_pipeline_status", Value: h.cfg.Version.Deployable.Pipeline.Status},
-			{Name: "deployable_pipeline_updated_at", Value: h.cfg.Version.Deployable.Pipeline.UpdatedAt.String()},
-			{Name: "deployable_commit_author_name", Value: h.cfg.Version.Deployable.Commit.AuthorName},
-			{Name: "deployable_commit_author_email", Value: h.cfg.Version.Deployable.Commit.AuthorEmail},
-			{Name: "deployable_commit_title", Value: h.cfg.Version.Deployable.Commit.Title},
-			{Name: "deployable_commit_message", Value: h.cfg.Version.Deployable.Commit.Message},
-			{Name: "deployable_commit_short_id", Value: h.cfg.Version.Deployable.Commit.ShortID},
-			{Name: "deployable_commit_created_at", Value: h.cfg.Version.Deployable.Commit.CreatedAt.String()},
-			{Name: "deployable_commit_updated_at", Value: h.cfg.Version.Deployable.Commit.LastPipeline.UpdatedAt.String()},
-			{Name: "environment_id", Value: strconv.FormatInt(int64(h.cfg.Version.Environment.ID), 10)},
-			{Name: "environment_name", Value: h.cfg.Version.Environment.Name},
-			{Name: "environment_external_url", Value: h.cfg.Version.Environment.ExternalURL},
-			{Name: "user_username", Value: user.Username},
-			{Name: "user_name", Value: user.Name},
-			{Name: "user_email", Value: user.Email},
-			{Name: "user_public_email", Value: user.PublicEmail},
-		},
+		Version:  []map[string]string{h.cfg.Version},
+		Metadata: metdatas,
 	}
 
 	return OutputJSON(h.stdout, output)

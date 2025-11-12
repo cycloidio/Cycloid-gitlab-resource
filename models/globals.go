@@ -12,8 +12,8 @@ type Source struct {
 }
 
 type Output struct {
-	Version  any       `json:"version"`
-	Metadata Metadatas `json:"metadata"`
+	Version  []map[string]string `json:"version"`
+	Metadata Metadatas           `json:"metadata"`
 }
 
 type Metadatas []Metadata

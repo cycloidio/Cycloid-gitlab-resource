@@ -3,6 +3,7 @@ package deployments
 import (
 	"fmt"
 	"slices"
+	"strconv"
 
 	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
@@ -37,18 +38,29 @@ func (h Handler) Check() error {
 		return nil
 	}
 
+	var versions []map[string]string
 	if h.cfg.Version == nil {
-		return OutputJSON(h.stdout, deployments[0])
+		versions = []map[string]string{DeploymentToVersion(deployments[0])}
 	} else {
-		var versions []*gitlab.Deployment
-		if i := slices.IndexFunc(deployments, func(d *gitlab.Deployment) bool {
-			return d.ID == h.cfg.Version.ID
-		}); i != -1 {
-			versions = deployments[:i]
-		} else {
-			versions = deployments
+
+		currentIDStr, ok := h.cfg.Version["id"]
+		if !ok {
+			return fmt.Errorf("failed to get current id from version %v", h.cfg.Version)
 		}
 
-		return OutputJSON(h.stdout, versions)
+		currentID, err := strconv.ParseInt(currentIDStr, 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse version id %q: %w", currentIDStr, err)
+		}
+
+		if i := slices.IndexFunc(deployments, func(d *gitlab.Deployment) bool {
+			return d.ID == int(currentID)
+		}); i != -1 {
+			versions = DeploymentsToVersion(deployments[:i])
+		} else {
+			versions = DeploymentsToVersion(deployments)
+		}
 	}
+
+	return OutputJSON(h.stdout, versions)
 }

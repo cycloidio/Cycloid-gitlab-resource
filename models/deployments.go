@@ -1,10 +1,8 @@
 package models
 
-import gitlab "gitlab.com/gitlab-org/api/client-go"
-
 type DeploymentInputs struct {
 	Source  DeploymentSource
-	Version *gitlab.Deployment
+	Version map[string]string `json:"version"`
 	Params  *ParamDeployments `json:"params,omitempty"`
 }
 

@@ -47,8 +47,8 @@ func Ptr[T any](t T) *T {
 	return &t
 }
 
-func GetUser(projectUser *gitlab.ProjectUser, client *gitlab.Client) (*gitlab.User, error) {
-	user, _, err := client.Users.GetUser(projectUser.ID, gitlab.GetUsersOptions{}, nil)
+func GetUser(userID int, client *gitlab.Client) (*gitlab.User, error) {
+	user, _, err := client.Users.GetUser(userID, gitlab.GetUsersOptions{}, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch user email with id %q and username %q: %w", user.ID, user.Username, err)
 	}

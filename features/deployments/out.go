@@ -47,6 +47,7 @@ func (h Handler) Out(outDir string) error {
 			// If we fail to write the JSON, we should still try to send the metadata JSON
 			fmt.Fprintf(h.stderr, "failed to write metadata to %q: %s\n", outDir+"/metadata.json", err.Error())
 		}
+
 		metadata := models.Metadatas{
 			{Name: "id", Value: strconv.FormatInt(int64(deploy.ID), 10)},
 			{Name: "iid", Value: strconv.FormatInt(int64(deploy.IID), 10)},
@@ -78,21 +79,42 @@ func (h Handler) Out(outDir string) error {
 		}
 
 		output := &models.Output{
-			Version:  deploy,
+			Version:  []map[string]string{DeploymentToVersion(deploy)},
 			Metadata: metadata,
 		}
+
 		return OutputJSON(h.stdout, output)
+
 	case "update":
+		deployIDStr, ok := h.cfg.Version["id"]
+		if !ok {
+			return fmt.Errorf("failed to update deployment, missing deployment ID in version %v", h.cfg.Version)
+		}
+
+		deployID, err := strconv.ParseInt(deployIDStr, 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse deployment id %q: %w", deployIDStr, err)
+		}
+
 		updatedDeploy, _, err := client.Deployments.UpdateProjectDeployment(
-			h.cfg.Source.ProjectID, h.cfg.Version.ID, &gitlab.UpdateProjectDeploymentOptions{
+			h.cfg.Source.ProjectID, int(deployID), &gitlab.UpdateProjectDeploymentOptions{
 				Status: (*gitlab.DeploymentStatusValue)(&h.cfg.Params.Status),
 			},
 		)
 		if err != nil {
-			return fmt.Errorf("failed to update deployment with id %q: %w", h.cfg.Version.ID, err)
+			return fmt.Errorf("failed to update deployment with id %q: %w", deployID, err)
+		}
+		userIDStr, ok := h.cfg.Version["user_id"]
+		if !ok {
+			return fmt.Errorf("cannot get user id from version %v", h.cfg.Version)
 		}
 
-		user, err := internal.GetUser(h.cfg.Version.User, client)
+		userID, err := strconv.ParseInt(userIDStr, 10, 64)
+		if err != nil {
+			return fmt.Errorf("failed to parse user id %q: %w", userIDStr, err)
+		}
+
+		user, err := internal.GetUser(int(userID), client)
 		if err != nil {
 			return err
 		}
@@ -144,15 +166,25 @@ func (h Handler) Out(outDir string) error {
 		}
 
 		output := &models.Output{
-			Version:  updatedDeploy,
+			Version:  []map[string]string{DeploymentToVersion(updatedDeploy)},
 			Metadata: metadata,
 		}
 		return OutputJSON(h.stdout, output)
 
 	case "delete":
-		_, err := client.Deployments.DeleteProjectDeployment(h.cfg.Source.ProjectID, h.cfg.Version.ID, nil)
+		deployIDStr, ok := h.cfg.Version["id"]
+		if !ok {
+			return fmt.Errorf("failed to update deployment, missing deployment ID in version %v", h.cfg.Version)
+		}
+
+		deployID, err := strconv.ParseInt(deployIDStr, 10, 64)
 		if err != nil {
-			return fmt.Errorf("failed to update deployment with id %q: %w", h.cfg.Version.ID, err)
+			return fmt.Errorf("failed to parse deployment id %q: %w", deployIDStr, err)
+		}
+
+		_, err = client.Deployments.DeleteProjectDeployment(h.cfg.Source.ProjectID, int(deployID), nil)
+		if err != nil {
+			return fmt.Errorf("failed to update deployment with id %q: %w", deployIDStr, err)
 		}
 
 		output := &models.Output{
