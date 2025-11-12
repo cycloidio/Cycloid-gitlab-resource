@@ -60,7 +60,7 @@ func (h Handler) In(outDir string) error {
 	}
 
 	output := &models.Output{
-		Version:  []map[string]string{h.cfg.Version},
+		Version:  h.cfg.Version,
 		Metadata: metdatas,
 	}
 

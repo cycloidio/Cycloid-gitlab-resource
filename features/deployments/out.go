@@ -79,7 +79,7 @@ func (h Handler) Out(outDir string) error {
 		}
 
 		output := &models.Output{
-			Version:  []map[string]string{DeploymentToVersion(deploy)},
+			Version:  DeploymentToVersion(deploy),
 			Metadata: metadata,
 		}
 
@@ -166,7 +166,7 @@ func (h Handler) Out(outDir string) error {
 		}
 
 		output := &models.Output{
-			Version:  []map[string]string{DeploymentToVersion(updatedDeploy)},
+			Version:  DeploymentToVersion(updatedDeploy),
 			Metadata: metadata,
 		}
 		return OutputJSON(h.stdout, output)
