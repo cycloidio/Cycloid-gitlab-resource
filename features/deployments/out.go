@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"strconv"
 
 	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
@@ -15,10 +14,7 @@ import (
 
 func (h Handler) Out(outDir string) error {
 	// Out script has the Version in the metadata.json
-	err := exec.Command("ls").Run()
-	_, _ = fmt.Fprintf(h.stderr, "%s", err.Error())
-
-	metadataPath := outDir + "/metadata.json"
+	metadataPath := outDir + "/deployments/metadata.json"
 	versionBytes, err := os.ReadFile(metadataPath)
 	if err != nil {
 		return fmt.Errorf("failed to read current metadata at %q: %w", metadataPath, err)
