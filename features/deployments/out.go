@@ -4,19 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 
 	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	"github.com/cycloidio/gitlab-resource/internal"
 	"github.com/cycloidio/gitlab-resource/models"
-	"github.com/sanity-io/litter"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 func (h Handler) Out(outDir string) error {
 	// Out script has the Version in the metadata.json
-	dirEntry, _ := os.ReadDir(outDir)
-	fmt.Fprintf(os.Stderr, "%s", litter.Sdump(dirEntry))
+	err := exec.Command("ls").Run()
+	_, _ = fmt.Fprintf(h.stderr, "%s", err.Error())
 
 	metadataPath := outDir + "/metadata.json"
 	versionBytes, err := os.ReadFile(metadataPath)
