@@ -13,6 +13,18 @@ import (
 )
 
 func (h Handler) Out(outDir string) error {
+	// Out script has the Version in the metadata.json
+	metadataPath := outDir + "/metadata.json"
+	versionBytes, err := os.ReadFile(metadataPath)
+	if err != nil {
+		return fmt.Errorf("failed to read current metadata at %q: %w", metadataPath, err)
+	}
+
+	err = json.Unmarshal(versionBytes, &h.cfg.Version)
+	if err != nil {
+		return fmt.Errorf("failed to read the version from %q: %w", metadataPath, err)
+	}
+
 	client, err := gitlabclient.NewGitlabClient(&gitlabclient.GitlabConfig{
 		Token: h.cfg.Source.Token,
 		Url:   h.cfg.Source.ServerURL,
@@ -39,13 +51,13 @@ func (h Handler) Out(outDir string) error {
 		deployJSON, err := json.MarshalIndent(deploy, "", "  ")
 		if err != nil {
 			// If we fail to write the JSON, we should still try to send the metadata JSON
-			fmt.Fprintf(h.stderr, "failed to serialize deployment payload to JSON: %s\n", err.Error())
+			_, _ = fmt.Fprintf(h.stderr, "failed to serialize deployment payload to JSON: %s\n", err.Error())
 		}
 
 		err = os.WriteFile(outDir+"/metadata.json", deployJSON, 0666)
 		if err != nil {
 			// If we fail to write the JSON, we should still try to send the metadata JSON
-			fmt.Fprintf(h.stderr, "failed to write metadata to %q: %s\n", outDir+"/metadata.json", err.Error())
+			_, _ = fmt.Fprintf(h.stderr, "failed to write metadata to %q: %s\n", outDir+"/metadata.json", err.Error())
 		}
 
 		metadata := models.Metadatas{
