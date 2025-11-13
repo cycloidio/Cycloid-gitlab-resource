@@ -31,11 +31,14 @@ func (h Handler) In(outDir string) error {
 		return err
 	}
 
-	var metdatas = make(models.Metadatas, len(h.cfg.Version))
-	i := 0
-	for k, v := range h.cfg.Version {
-		metdatas[0] = models.Metadata{Name: k, Value: v}
-		i++
+	var metdatas = models.Metadatas{
+		{Name: "id", Value: h.cfg.Version["id"]},
+		{Name: "status", Value: h.cfg.Version["status"]},
+		{Name: "ref", Value: h.cfg.Version["ref"]},
+		{Name: "sha", Value: h.cfg.Version["sha"]},
+		{Name: "environment_id", Value: h.cfg.Version["environment_id"]},
+		{Name: "environment_name", Value: h.cfg.Version["environment_name"]},
+		{Name: "environment_external_url", Value: h.cfg.Version["environment_tier"]},
 	}
 
 	if userIDStr, ok := h.cfg.Version["user_id"]; ok {
@@ -52,9 +55,7 @@ func (h Handler) In(outDir string) error {
 		metdatas = append(metdatas,
 			models.Metadatas{
 				{Name: "user_username", Value: user.Username},
-				{Name: "user_name", Value: user.Name},
 				{Name: "user_email", Value: user.Email},
-				{Name: "user_public_email", Value: user.PublicEmail},
 			}...,
 		)
 	}

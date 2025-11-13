@@ -9,11 +9,15 @@ import (
 	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	"github.com/cycloidio/gitlab-resource/internal"
 	"github.com/cycloidio/gitlab-resource/models"
+	"github.com/sanity-io/litter"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 func (h Handler) Out(outDir string) error {
 	// Out script has the Version in the metadata.json
+	dirEntry, _ := os.ReadDir(outDir)
+	fmt.Fprintf(os.Stderr, "%s", litter.Sdump(dirEntry))
+
 	metadataPath := outDir + "/metadata.json"
 	versionBytes, err := os.ReadFile(metadataPath)
 	if err != nil {
@@ -62,19 +66,11 @@ func (h Handler) Out(outDir string) error {
 
 		metadata := models.Metadatas{
 			{Name: "id", Value: strconv.FormatInt(int64(deploy.ID), 10)},
-			{Name: "iid", Value: strconv.FormatInt(int64(deploy.IID), 10)},
 			{Name: "status", Value: deploy.Status},
 			{Name: "ref", Value: deploy.Ref},
 			{Name: "sha", Value: deploy.SHA},
 			{Name: "deployable_name", Value: deploy.Deployable.Name},
-			{Name: "deployable_ref", Value: deploy.Deployable.Ref},
-			{Name: "deployable_stage", Value: deploy.Deployable.Stage},
-			{Name: "deployable_status", Value: deploy.Deployable.Status},
-			{Name: "deployable_tag", Value: strconv.FormatBool(deploy.Deployable.Tag)},
 			{Name: "deployable_pipeline_id", Value: strconv.FormatInt(int64(deploy.Deployable.Pipeline.ID), 10)},
-			{Name: "deployable_pipeline_ref", Value: deploy.Deployable.Pipeline.Ref},
-			{Name: "deployable_pipeline_sha", Value: deploy.Deployable.Pipeline.SHA},
-			{Name: "deployable_pipeline_status", Value: deploy.Deployable.Pipeline.Status},
 			{Name: "environment_id", Value: strconv.FormatInt(int64(deploy.Environment.ID), 10)},
 			{Name: "environment_name", Value: deploy.Environment.Name},
 			{Name: "environment_external_url", Value: deploy.Environment.ExternalURL},
@@ -84,9 +80,6 @@ func (h Handler) Out(outDir string) error {
 			metadata = append(metadata, models.Metadatas{
 				{Name: "deployable_commit_author_name", Value: deploy.Deployable.Commit.AuthorName},
 				{Name: "deployable_commit_author_email", Value: deploy.Deployable.Commit.AuthorEmail},
-				{Name: "deployable_commit_title", Value: deploy.Deployable.Commit.Title},
-				{Name: "deployable_commit_message", Value: deploy.Deployable.Commit.Message},
-				{Name: "deployable_commit_short_id", Value: deploy.Deployable.Commit.ShortID},
 			}...)
 		}
 
@@ -145,34 +138,24 @@ func (h Handler) Out(outDir string) error {
 
 		metadata := models.Metadatas{
 			{Name: "id", Value: strconv.FormatInt(int64(updatedDeploy.ID), 10)},
-			{Name: "iid", Value: strconv.FormatInt(int64(updatedDeploy.IID), 10)},
 			{Name: "status", Value: updatedDeploy.Status},
 			{Name: "ref", Value: updatedDeploy.Ref},
 			{Name: "sha", Value: updatedDeploy.SHA},
 			{Name: "deployable_name", Value: updatedDeploy.Deployable.Name},
 			{Name: "deployable_ref", Value: updatedDeploy.Deployable.Ref},
-			{Name: "deployable_stage", Value: updatedDeploy.Deployable.Stage},
-			{Name: "deployable_status", Value: updatedDeploy.Deployable.Status},
 			{Name: "deployable_tag", Value: strconv.FormatBool(updatedDeploy.Deployable.Tag)},
 			{Name: "deployable_pipeline_id", Value: strconv.FormatInt(int64(updatedDeploy.Deployable.Pipeline.ID), 10)},
-			{Name: "deployable_pipeline_ref", Value: updatedDeploy.Deployable.Pipeline.Ref},
-			{Name: "deployable_pipeline_sha", Value: updatedDeploy.Deployable.Pipeline.SHA},
-			{Name: "deployable_pipeline_status", Value: updatedDeploy.Deployable.Pipeline.Status},
 			{Name: "environment_id", Value: strconv.FormatInt(int64(updatedDeploy.Environment.ID), 10)},
 			{Name: "environment_name", Value: updatedDeploy.Environment.Name},
 			{Name: "environment_external_url", Value: updatedDeploy.Environment.ExternalURL},
 			{Name: "user_username", Value: user.Username},
-			{Name: "user_name", Value: user.Name},
 			{Name: "user_email", Value: user.Email},
-			{Name: "user_public_email", Value: user.PublicEmail},
 		}
 
 		if updatedDeploy.Deployable.Commit != nil {
 			metadata = append(metadata, models.Metadatas{
 				{Name: "deployable_commit_author_name", Value: updatedDeploy.Deployable.Commit.AuthorName},
 				{Name: "deployable_commit_author_email", Value: updatedDeploy.Deployable.Commit.AuthorEmail},
-				{Name: "deployable_commit_title", Value: updatedDeploy.Deployable.Commit.Title},
-				{Name: "deployable_commit_message", Value: updatedDeploy.Deployable.Commit.Message},
 				{Name: "deployable_commit_short_id", Value: updatedDeploy.Deployable.Commit.ShortID},
 			}...)
 		}
