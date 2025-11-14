@@ -48,6 +48,7 @@ func (h Handler) In(outDir string) error {
 			return fmt.Errorf("deployment with id %d has status %q where status %q is requested", deploy.ID, deploy.Status, *h.cfg.Source.Status)
 		}
 	}
+
 	newVersion := DeploymentToVersion(deploy)
 	h.cfg.Version = newVersion
 	var metdatas = models.Metadatas{

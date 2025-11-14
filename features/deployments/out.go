@@ -74,8 +74,17 @@ func (h Handler) Out(outDir string) error {
 		}
 
 		output := &models.Output{
-			Version:  DeploymentToVersion(deploy),
 			Metadata: metadata,
+		}
+
+		if h.cfg.Source.Status != nil {
+			// If the created version doesn't match this resource
+			// status filter, don't output a version
+			if deploy.Status != *h.cfg.Source.Status {
+				output.Version = make(map[string]string)
+			}
+		} else {
+			output.Version = DeploymentToVersion(deploy)
 		}
 
 		return OutputJSON(h.stdout, output)
@@ -137,31 +146,53 @@ func (h Handler) Out(outDir string) error {
 			fmt.Fprintf(os.Stderr, "failed to write metadata to %q: %s\n", metadataPath, err.Error())
 		}
 
-		metadata := models.Metadatas{
-			{Name: "id", Value: strconv.FormatInt(int64(updatedDeploy.ID), 10)},
-			{Name: "status", Value: updatedDeploy.Status},
-			{Name: "ref", Value: updatedDeploy.Ref},
-			{Name: "sha", Value: updatedDeploy.SHA},
-			{Name: "deployable_name", Value: updatedDeploy.Deployable.Name},
-			{Name: "deployable_pipeline_id", Value: strconv.FormatInt(int64(updatedDeploy.Deployable.Pipeline.ID), 10)},
-			{Name: "environment_id", Value: strconv.FormatInt(int64(updatedDeploy.Environment.ID), 10)},
-			{Name: "environment_name", Value: updatedDeploy.Environment.Name},
-			{Name: "environment_external_url", Value: updatedDeploy.Environment.ExternalURL},
-			{Name: "user_username", Value: user.Username},
-			{Name: "user_email", Value: user.Email},
-		}
-
-		if updatedDeploy.Deployable.Commit != nil {
-			metadata = append(metadata, models.Metadatas{
-				{Name: "deployable_commit_author_name", Value: updatedDeploy.Deployable.Commit.AuthorName},
-				{Name: "deployable_commit_author_email", Value: updatedDeploy.Deployable.Commit.AuthorEmail},
-			}...)
+		metadata := models.Metadatas{}
+		if h.cfg.Source.Status != nil {
+			if updatedDeploy.Status != *h.cfg.Source.Status {
+				// To avoid creating a new version with the wrong status
+				// when the resource has a status filter
+				// send back the original version
+				metadata = models.Metadatas{
+					{Name: "id", Value: h.cfg.Version["id"]},
+					{Name: "status", Value: h.cfg.Version["status"]},
+					{Name: "ref", Value: h.cfg.Version["ref"]},
+					{Name: "sha", Value: h.cfg.Version["sha"]},
+					{Name: "deployable_name", Value: h.cfg.Version["deployable_name"]},
+					{Name: "deployable_pipeline_id", Value: h.cfg.Version["deployable_pipeline_id"]},
+					{Name: "environment_id", Value: h.cfg.Version["environment_id"]},
+					{Name: "environment_name", Value: h.cfg.Version["environment_name"]},
+					{Name: "environment_external_url", Value: h.cfg.Version["environment_external_url"]},
+					{Name: "user_username", Value: h.cfg.Version["user_username"]},
+					{Name: "user_email", Value: h.cfg.Version["user_email"]},
+				}
+			}
+		} else {
+			metadata = models.Metadatas{
+				{Name: "id", Value: strconv.FormatInt(int64(updatedDeploy.ID), 10)},
+				{Name: "status", Value: updatedDeploy.Status},
+				{Name: "ref", Value: updatedDeploy.Ref},
+				{Name: "sha", Value: updatedDeploy.SHA},
+				{Name: "deployable_name", Value: updatedDeploy.Deployable.Name},
+				{Name: "deployable_pipeline_id", Value: strconv.FormatInt(int64(updatedDeploy.Deployable.Pipeline.ID), 10)},
+				{Name: "environment_id", Value: strconv.FormatInt(int64(updatedDeploy.Environment.ID), 10)},
+				{Name: "environment_name", Value: updatedDeploy.Environment.Name},
+				{Name: "environment_external_url", Value: updatedDeploy.Environment.ExternalURL},
+				{Name: "user_username", Value: user.Username},
+				{Name: "user_email", Value: user.Email},
+			}
+			if updatedDeploy.Deployable.Commit != nil {
+				metadata = append(metadata, models.Metadatas{
+					{Name: "deployable_commit_author_name", Value: updatedDeploy.Deployable.Commit.AuthorName},
+					{Name: "deployable_commit_author_email", Value: updatedDeploy.Deployable.Commit.AuthorEmail},
+				}...)
+			}
 		}
 
 		output := &models.Output{
 			Version:  DeploymentToVersion(updatedDeploy),
 			Metadata: metadata,
 		}
+
 		return OutputJSON(h.stdout, output)
 
 	case "delete":
