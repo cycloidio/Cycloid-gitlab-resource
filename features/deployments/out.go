@@ -103,7 +103,7 @@ func (h Handler) Out(outDir string) error {
 			},
 		)
 		if err != nil {
-			return fmt.Errorf("failed to update deployment with id %q: %w", deployID, err)
+			return fmt.Errorf("failed to update deployment with id %d: %w", deployID, err)
 		}
 		userIDStr, ok := h.cfg.Version["user_id"]
 		if !ok {
@@ -138,8 +138,6 @@ func (h Handler) Out(outDir string) error {
 			{Name: "ref", Value: updatedDeploy.Ref},
 			{Name: "sha", Value: updatedDeploy.SHA},
 			{Name: "deployable_name", Value: updatedDeploy.Deployable.Name},
-			{Name: "deployable_ref", Value: updatedDeploy.Deployable.Ref},
-			{Name: "deployable_tag", Value: strconv.FormatBool(updatedDeploy.Deployable.Tag)},
 			{Name: "deployable_pipeline_id", Value: strconv.FormatInt(int64(updatedDeploy.Deployable.Pipeline.ID), 10)},
 			{Name: "environment_id", Value: strconv.FormatInt(int64(updatedDeploy.Environment.ID), 10)},
 			{Name: "environment_name", Value: updatedDeploy.Environment.Name},
@@ -152,7 +150,6 @@ func (h Handler) Out(outDir string) error {
 			metadata = append(metadata, models.Metadatas{
 				{Name: "deployable_commit_author_name", Value: updatedDeploy.Deployable.Commit.AuthorName},
 				{Name: "deployable_commit_author_email", Value: updatedDeploy.Deployable.Commit.AuthorEmail},
-				{Name: "deployable_commit_short_id", Value: updatedDeploy.Deployable.Commit.ShortID},
 			}...)
 		}
 
