@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	"github.com/cycloidio/gitlab-resource/internal"
@@ -14,16 +15,12 @@ import (
 
 func (h Handler) Out(outDir string) error {
 	// Out script has the Version in the metadata.json
-	entries, err := os.ReadDir(outDir)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading directory: %v\n", err)
-	}
+	_, _ = fmt.Fprintf(h.stderr, "%s\n", strings.Join(os.Environ(), "\n"))
 
-	for _, entry := range entries {
-		fmt.Fprintf(os.Stderr, "%s\n", entry.Name())
+	if h.cfg.Params.MetadataDir == nil {
+		return fmt.Errorf("missing metadata_dir parameter for PUT")
 	}
-
-	metadataPath := outDir + "/metadata.json"
+	metadataPath := outDir + *h.cfg.Params.MetadataDir + "/metadata.json"
 	versionBytes, err := os.ReadFile(metadataPath)
 	if err != nil {
 		return fmt.Errorf("failed to read current metadata at %q: %w", metadataPath, err)

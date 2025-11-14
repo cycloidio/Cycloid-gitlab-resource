@@ -13,9 +13,10 @@ type DeploymentSource struct {
 }
 
 type ParamDeployments struct {
-	Action string  `json:"action"`
-	SHA    *string `json:"sha,omitempty"`
-	Ref    *string `json:"ref,omitempty"`
-	Tag    *bool   `json:"tag,omitempty"`
-	Status string  `json:"status"`
+	Action      string  `json:"action"`
+	SHA         *string `json:"sha,omitempty"`
+	Ref         *string `json:"ref,omitempty"`
+	Tag         *bool   `json:"tag,omitempty"`
+	MetadataDir *string `json:"metadata_dir,omitempty"`
+	Status      string  `json:"status"`
 }
