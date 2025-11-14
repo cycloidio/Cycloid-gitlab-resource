@@ -28,6 +28,7 @@ func (h Handler) Check() error {
 	if err != nil {
 		return fmt.Errorf("failed to fetch deployments from gitlab API: %w", err)
 	}
+	deploymentsLen := len(deployments)
 
 	if len(deployments) == 0 {
 		_, err := fmt.Fprintf(h.stdout, "[]")
@@ -40,10 +41,10 @@ func (h Handler) Check() error {
 
 	var versions = []map[string]string{}
 	if h.cfg.Source.Mode == "yield" {
-		version := DeploymentToVersion(deployments[0])
+		version := DeploymentToVersion(deployments[deploymentsLen-1])
 		versions = append(versions, version)
 	} else if h.cfg.Version == nil {
-		versions = []map[string]string{DeploymentToVersion(deployments[0])}
+		versions = []map[string]string{DeploymentToVersion(deployments[deploymentsLen-1])}
 	} else {
 
 		currentIDStr, ok := h.cfg.Version["id"]
