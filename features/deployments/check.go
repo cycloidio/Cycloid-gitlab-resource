@@ -44,7 +44,7 @@ func (h Handler) Check() error {
 		// Always return the oldest deployment with a timestamp
 		version := DeploymentToVersion(deployments[0])
 		version["check_timestamp"] = time.Now().String()
-		versions[0] = version
+		versions = append(versions, version)
 	} else if h.cfg.Version == nil {
 		versions = []map[string]string{DeploymentToVersion(deployments[0])}
 	} else {
