@@ -21,7 +21,10 @@ build-release:
     upx gitlab-resource
 
 build-docker:
-    docker build . --tag cycloid/gitlab-resource:latest
+    docker build . --tag docker.io/cycloid/gitlab-resource:latest
+
+push-docker: build-docker
+    docker push cycloid/gitlab-resource:latest
 
 test-docker-check: build-docker
     cat check_delta.json | docker run -i -a STDIN -a STDERR -a STDOUT --rm -v "$(pwd):/code" -w /code cycloid/gitlab-resource:latest /opt/resource/check

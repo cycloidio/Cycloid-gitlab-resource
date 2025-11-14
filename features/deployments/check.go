@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
-	"time"
 
 	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
@@ -41,9 +40,7 @@ func (h Handler) Check() error {
 
 	var versions = []map[string]string{}
 	if h.cfg.Source.Mode == "yield" {
-		// Always return the oldest deployment with a timestamp
 		version := DeploymentToVersion(deployments[0])
-		version["check_timestamp"] = time.Now().String()
 		versions = append(versions, version)
 	} else if h.cfg.Version == nil {
 		versions = []map[string]string{DeploymentToVersion(deployments[0])}
