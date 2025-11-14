@@ -146,13 +146,14 @@ func (h Handler) Out(outDir string) error {
 			fmt.Fprintf(os.Stderr, "failed to write metadata to %q: %s\n", metadataPath, err.Error())
 		}
 
-		metadata := models.Metadatas{}
+		output := &models.Output{}
 		if h.cfg.Source.Status != nil {
 			if updatedDeploy.Status != *h.cfg.Source.Status {
 				// To avoid creating a new version with the wrong status
 				// when the resource has a status filter
 				// send back the original version
-				metadata = models.Metadatas{
+				output.Version = h.cfg.Version
+				output.Metadata = models.Metadatas{
 					{Name: "id", Value: h.cfg.Version["id"]},
 					{Name: "status", Value: h.cfg.Version["status"]},
 					{Name: "ref", Value: h.cfg.Version["ref"]},
@@ -167,7 +168,8 @@ func (h Handler) Out(outDir string) error {
 				}
 			}
 		} else {
-			metadata = models.Metadatas{
+			output.Version = DeploymentToVersion(updatedDeploy)
+			metadata := models.Metadatas{
 				{Name: "id", Value: strconv.FormatInt(int64(updatedDeploy.ID), 10)},
 				{Name: "status", Value: updatedDeploy.Status},
 				{Name: "ref", Value: updatedDeploy.Ref},
@@ -186,11 +188,7 @@ func (h Handler) Out(outDir string) error {
 					{Name: "deployable_commit_author_email", Value: updatedDeploy.Deployable.Commit.AuthorEmail},
 				}...)
 			}
-		}
-
-		output := &models.Output{
-			Version:  DeploymentToVersion(updatedDeploy),
-			Metadata: metadata,
+			output.Metadata = metadata
 		}
 
 		return OutputJSON(h.stdout, output)
