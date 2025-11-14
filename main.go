@@ -73,7 +73,6 @@ func run(action string, cmd *cobra.Command, outDir *string) error {
 	if err != nil {
 		return fmt.Errorf("failed to read source metadata from stdin: %w", err)
 	}
-	fmt.Fprintf(os.Stderr, "%s\n", string(in))
 
 	var input models.Input
 	err = json.Unmarshal(in, &input)

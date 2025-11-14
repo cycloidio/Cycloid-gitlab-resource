@@ -39,15 +39,13 @@ func (h Handler) Check() error {
 		return nil
 	}
 
+	var versions = []map[string]string{}
 	if h.cfg.Source.Mode == "yield" {
 		// Always return the oldest deployment with a timestamp
 		version := DeploymentToVersion(deployments[0])
 		version["check_timestamp"] = time.Now().String()
-		return OutputJSON(h.stdout, version)
-	}
-
-	var versions []map[string]string
-	if h.cfg.Version == nil {
+		versions[0] = version
+	} else if h.cfg.Version == nil {
 		versions = []map[string]string{DeploymentToVersion(deployments[0])}
 	} else {
 
