@@ -46,6 +46,10 @@ func (h Handler) Check() error {
 	} else if h.cfg.Version == nil {
 		versions = []map[string]string{DeploymentToVersion(deployments[deploymentsLen-1])}
 	} else {
+		if h.cfg.Version["status"] != "running" {
+			// don't return new version if the current one doesn't match the status
+			return OutputJSON(h.stdout, versions)
+		}
 
 		currentIDStr, ok := h.cfg.Version["id"]
 		if !ok {
