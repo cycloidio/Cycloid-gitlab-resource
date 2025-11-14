@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 
@@ -20,7 +21,7 @@ func (h Handler) Out(outDir string) error {
 	if h.cfg.Params.MetadataDir == nil {
 		return fmt.Errorf("missing metadata_dir parameter for PUT")
 	}
-	metadataPath := outDir + *h.cfg.Params.MetadataDir + "/metadata.json"
+	metadataPath := path.Join(outDir, *h.cfg.Params.MetadataDir, "metadata.json")
 	versionBytes, err := os.ReadFile(metadataPath)
 	if err != nil {
 		return fmt.Errorf("failed to read current metadata at %q: %w", metadataPath, err)
