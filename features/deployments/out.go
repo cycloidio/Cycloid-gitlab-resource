@@ -14,7 +14,16 @@ import (
 
 func (h Handler) Out(outDir string) error {
 	// Out script has the Version in the metadata.json
-	metadataPath := outDir + "/deployments/metadata.json"
+	entries, err := os.ReadDir(outDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading directory: %v\n", err)
+	}
+
+	for _, entry := range entries {
+		fmt.Fprintf(os.Stderr, "%s\n", entry.Name())
+	}
+
+	metadataPath := outDir + "/metadata.json"
 	versionBytes, err := os.ReadFile(metadataPath)
 	if err != nil {
 		return fmt.Errorf("failed to read current metadata at %q: %w", metadataPath, err)
