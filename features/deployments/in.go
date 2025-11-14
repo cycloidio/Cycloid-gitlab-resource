@@ -33,6 +33,23 @@ func (h Handler) In(outDir string) error {
 		return err
 	}
 
+	deployID, err := strconv.ParseInt(h.cfg.Version["id"], 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to cast current deployment id %q: %w", h.cfg.Version["id"], err)
+	}
+
+	deploy, _, err := client.Deployments.GetProjectDeployment(h.cfg.Source.ProjectID, int(deployID))
+	if err != nil {
+		return fmt.Errorf("failed to fetch deployment with id %q: %w", h.cfg.Version["id"], err)
+	}
+
+	if h.cfg.Source.Status != nil {
+		if deploy.Status != *h.cfg.Source.Status {
+			return fmt.Errorf("deployment with id %d has status %q where status %q is requested", deploy.ID, deploy.Status, *h.cfg.Source.Status)
+		}
+	}
+	newVersion := DeploymentToVersion(deploy)
+	h.cfg.Version = newVersion
 	var metdatas = models.Metadatas{
 		{Name: "id", Value: h.cfg.Version["id"]},
 		{Name: "status", Value: h.cfg.Version["status"]},

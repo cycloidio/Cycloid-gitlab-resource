@@ -19,16 +19,6 @@ func (h Handler) Out(outDir string) error {
 	}
 	metadataPath := path.Join(outDir, *h.cfg.Params.MetadataDir, "metadata.json")
 
-	versionBytes, err := os.ReadFile(metadataPath)
-	if err != nil {
-		return fmt.Errorf("failed to read current metadata at %q: %w", metadataPath, err)
-	}
-
-	err = json.Unmarshal(versionBytes, &h.cfg.Version)
-	if err != nil {
-		return fmt.Errorf("failed to read the version from %q: %w", metadataPath, err)
-	}
-
 	client, err := gitlabclient.NewGitlabClient(&gitlabclient.GitlabConfig{
 		Token: h.cfg.Source.Token,
 		Url:   h.cfg.Source.ServerURL,
@@ -91,6 +81,16 @@ func (h Handler) Out(outDir string) error {
 		return OutputJSON(h.stdout, output)
 
 	case "update":
+		versionBytes, err := os.ReadFile(metadataPath)
+		if err != nil {
+			return fmt.Errorf("failed to read current metadata at %q: %w", metadataPath, err)
+		}
+
+		err = json.Unmarshal(versionBytes, &h.cfg.Version)
+		if err != nil {
+			return fmt.Errorf("failed to read the version from %q: %w", metadataPath, err)
+		}
+
 		deployIDStr, ok := h.cfg.Version["id"]
 		if !ok {
 			return fmt.Errorf("failed to update deployment, missing deployment ID in version %v", h.cfg.Version)
@@ -165,6 +165,16 @@ func (h Handler) Out(outDir string) error {
 		return OutputJSON(h.stdout, output)
 
 	case "delete":
+		versionBytes, err := os.ReadFile(metadataPath)
+		if err != nil {
+			return fmt.Errorf("failed to read current metadata at %q: %w", metadataPath, err)
+		}
+
+		err = json.Unmarshal(versionBytes, &h.cfg.Version)
+		if err != nil {
+			return fmt.Errorf("failed to read the version from %q: %w", metadataPath, err)
+		}
+
 		deployIDStr, ok := h.cfg.Version["id"]
 		if !ok {
 			return fmt.Errorf("failed to update deployment, missing deployment ID in version %v", h.cfg.Version)
