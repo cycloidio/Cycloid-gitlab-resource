@@ -159,7 +159,7 @@ func (h Handler) Out(outDir string) error {
 		}
 
 		output := &models.Output{
-			Version:  DeploymentToVersion(updatedDeploy),
+			Version:  nil,
 			Metadata: metadata,
 		}
 		return OutputJSON(h.stdout, output)
