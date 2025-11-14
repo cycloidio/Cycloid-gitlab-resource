@@ -159,7 +159,7 @@ func (h Handler) Out(outDir string) error {
 		}
 
 		output := &models.Output{
-			Version:  nil,
+			Version:  DeploymentToVersion(updatedDeploy),
 			Metadata: metadata,
 		}
 		return OutputJSON(h.stdout, output)
@@ -180,8 +180,9 @@ func (h Handler) Out(outDir string) error {
 			return fmt.Errorf("failed to update deployment with id %q: %w", deployIDStr, err)
 		}
 
+		versions := make(map[string]string)
 		output := &models.Output{
-			Version:  nil,
+			Version:  versions,
 			Metadata: models.Metadatas{},
 		}
 		return OutputJSON(h.stdout, output)
