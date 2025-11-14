@@ -8,6 +8,7 @@ type DeploymentInputs struct {
 
 type DeploymentSource struct {
 	Source
+	Mode        string  `json:"mode,omitempty"`
 	Status      *string `json:"status,omitempty"`
 	Environment *string `json:"environment,omitempty"`
 }

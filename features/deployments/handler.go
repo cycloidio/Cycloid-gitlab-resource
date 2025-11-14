@@ -4,8 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"slices"
+	"strings"
 
 	"github.com/cycloidio/gitlab-resource/models"
+)
+
+var (
+	AvailableModes = []string{"classic", "yield"}
 )
 
 func NewHandler(stdout, stderr io.Writer, input []byte) (*Handler, error) {
@@ -21,6 +27,10 @@ func NewHandler(stdout, stderr io.Writer, input []byte) (*Handler, error) {
 
 	if config.Source.ServerURL == "" {
 		return nil, fmt.Errorf("missing server_url parameter")
+	}
+
+	if !slices.Contains(AvailableModes, config.Source.Mode) {
+		return nil, fmt.Errorf("source.mode must one of those values: %s", strings.Join(AvailableModes, ", "))
 	}
 
 	return &Handler{

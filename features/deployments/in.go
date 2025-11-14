@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 
 	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
@@ -12,12 +13,13 @@ import (
 )
 
 func (h Handler) In(outDir string) error {
+	metadataPath := path.Join(outDir, "metadata.json")
 	versionJSON, err := json.Marshal(h.cfg.Version)
 	if err != nil {
 		return fmt.Errorf("failed to serialize version to JSON: %w", err)
 	}
 
-	err = os.WriteFile(outDir+"/metadata.json", versionJSON, 0666)
+	err = os.WriteFile(metadataPath, versionJSON, 0666)
 	if err != nil {
 		return fmt.Errorf("failed to write version to output dir %q: %w", outDir, err)
 	}

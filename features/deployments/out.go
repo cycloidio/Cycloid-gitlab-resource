@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"strconv"
-	"strings"
 
 	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	"github.com/cycloidio/gitlab-resource/internal"
@@ -15,13 +14,11 @@ import (
 )
 
 func (h Handler) Out(outDir string) error {
-	// Out script has the Version in the metadata.json
-	_, _ = fmt.Fprintf(h.stderr, "%s\n", strings.Join(os.Environ(), "\n"))
-
 	if h.cfg.Params.MetadataDir == nil {
 		return fmt.Errorf("missing metadata_dir parameter for PUT")
 	}
 	metadataPath := path.Join(outDir, *h.cfg.Params.MetadataDir, "metadata.json")
+
 	versionBytes, err := os.ReadFile(metadataPath)
 	if err != nil {
 		return fmt.Errorf("failed to read current metadata at %q: %w", metadataPath, err)
@@ -61,10 +58,10 @@ func (h Handler) Out(outDir string) error {
 			_, _ = fmt.Fprintf(h.stderr, "failed to serialize deployment payload to JSON: %s\n", err.Error())
 		}
 
-		err = os.WriteFile(outDir+"/metadata.json", deployJSON, 0666)
+		err = os.WriteFile(metadataPath, deployJSON, 0666)
 		if err != nil {
 			// If we fail to write the JSON, we should still try to send the metadata JSON
-			_, _ = fmt.Fprintf(h.stderr, "failed to write metadata to %q: %s\n", outDir+"/metadata.json", err.Error())
+			_, _ = fmt.Fprintf(h.stderr, "failed to write metadata to %q: %s\n", metadataPath, err.Error())
 		}
 
 		metadata := models.Metadatas{
@@ -112,6 +109,7 @@ func (h Handler) Out(outDir string) error {
 		if err != nil {
 			return fmt.Errorf("failed to update deployment with id %d: %w", deployID, err)
 		}
+
 		userIDStr, ok := h.cfg.Version["user_id"]
 		if !ok {
 			return fmt.Errorf("cannot get user id from version %v", h.cfg.Version)
@@ -133,10 +131,10 @@ func (h Handler) Out(outDir string) error {
 			fmt.Fprintf(os.Stderr, "failed to serialize deployment payload to JSON: %s\n", err.Error())
 		}
 
-		err = os.WriteFile(outDir+"/metadata.json", deployJSON, 0666)
+		err = os.WriteFile(metadataPath, deployJSON, 0666)
 		if err != nil {
 			// If we fail to write the JSON, we should still try to send the metadata JSON
-			fmt.Fprintf(os.Stderr, "failed to write metadata to %q: %s\n", outDir+"/metadata.json", err.Error())
+			fmt.Fprintf(os.Stderr, "failed to write metadata to %q: %s\n", metadataPath, err.Error())
 		}
 
 		metadata := models.Metadatas{
