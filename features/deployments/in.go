@@ -85,5 +85,5 @@ func (h Handler) In(outDir string) error {
 		Metadata: metdatas,
 	}
 
-	return OutputJSON(h.stdout, output)
+	return internal.OutputJSON(h.stdout, output)
 }

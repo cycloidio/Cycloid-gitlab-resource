@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
+	"github.com/cycloidio/gitlab-resource/internal"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
@@ -30,7 +31,7 @@ func (h Handler) Check() error {
 	}
 	deploymentsLen := len(deployments)
 
-	if len(deployments) == 0 {
+	if deploymentsLen == 0 {
 		_, err := fmt.Fprintf(h.stdout, "[]")
 		if err != nil {
 			return fmt.Errorf("failed to output to h.cfg.stdout: %w", err)
@@ -48,7 +49,7 @@ func (h Handler) Check() error {
 	} else {
 		if h.cfg.Version["status"] != "running" {
 			// don't return new version if the current one doesn't match the status
-			return OutputJSON(h.stdout, versions)
+			return internal.OutputJSON(h.stdout, versions)
 		}
 
 		currentIDStr, ok := h.cfg.Version["id"]
@@ -70,5 +71,5 @@ func (h Handler) Check() error {
 		}
 	}
 
-	return OutputJSON(h.stdout, versions)
+	return internal.OutputJSON(h.stdout, versions)
 }

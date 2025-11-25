@@ -14,6 +14,12 @@ var (
 	AvailableModes = []string{"classic", "yield"}
 )
 
+type Handler struct {
+	stdout io.Writer
+	stderr io.Writer
+	cfg    *models.DeploymentInputs
+}
+
 func NewHandler(stdout, stderr io.Writer, input []byte) (*Handler, error) {
 	var config *models.DeploymentInputs
 	err := json.Unmarshal(input, &config)
@@ -38,10 +44,4 @@ func NewHandler(stdout, stderr io.Writer, input []byte) (*Handler, error) {
 		stderr: stderr,
 		cfg:    config,
 	}, nil
-}
-
-type Handler struct {
-	stdout io.Writer
-	stderr io.Writer
-	cfg    *models.DeploymentInputs
 }

@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/cycloidio/gitlab-resource/features/deployments"
+	"github.com/cycloidio/gitlab-resource/features/environments"
 )
 
 var (
 	AvailableFeatures = [...]string{
 		"deployments",
+		"environments",
 	}
 )
 
@@ -24,6 +26,8 @@ func NewFeatureHandler(stdout, stderr io.Writer, feature string, input []byte) (
 	switch strings.ToLower(feature) {
 	case "deployments":
 		return deployments.NewHandler(stdout, stderr, input)
+	case "environments":
+		return environments.NewHandler(stdout, stderr, input)
 	default:
 		return nil, fmt.Errorf("feature %q does not exists, available ones are: %v", feature, AvailableFeatures)
 	}

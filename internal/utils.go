@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
@@ -42,6 +43,21 @@ func MustJSON(input any) string {
 	return string(out)
 }
 
+func WriteMetadata(outDir string, data any) error {
+	outJSON, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to serialize data to JSON %v: %w", data, err)
+	}
+	metadataPath := path.Join(outDir, "metadata.json")
+
+	err = os.WriteFile(metadataPath, outJSON, 0666)
+	if err != nil {
+		return fmt.Errorf("failed to write metadata to file %q: %w", metadataPath, err)
+	}
+
+	return nil
+}
+
 // Ptr return a point to the value
 func Ptr[T any](t T) *T {
 	return &t
@@ -54,4 +70,18 @@ func GetUser(userID int, client *gitlab.Client) (*gitlab.User, error) {
 	}
 
 	return user, nil
+}
+
+func OutputJSON(stdout io.Writer, output any) error {
+	data, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to serialize output to JSON: %w", err)
+	}
+
+	_, err = stdout.Write(data)
+	if err != nil {
+		return fmt.Errorf("failed to output to stdout: %w", err)
+	}
+
+	return nil
 }

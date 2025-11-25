@@ -87,7 +87,7 @@ func (h Handler) Out(outDir string) error {
 			output.Version = DeploymentToVersion(deploy)
 		}
 
-		return OutputJSON(h.stdout, output)
+		return internal.OutputJSON(h.stdout, output)
 
 	case "update":
 		versionBytes, err := os.ReadFile(metadataPath)
@@ -191,7 +191,7 @@ func (h Handler) Out(outDir string) error {
 			output.Metadata = metadata
 		}
 
-		return OutputJSON(h.stdout, output)
+		return internal.OutputJSON(h.stdout, output)
 
 	case "delete":
 		versionBytes, err := os.ReadFile(metadataPath)
@@ -224,7 +224,7 @@ func (h Handler) Out(outDir string) error {
 			Version:  versions,
 			Metadata: models.Metadatas{},
 		}
-		return OutputJSON(h.stdout, output)
+		return internal.OutputJSON(h.stdout, output)
 
 	default:
 		return fmt.Errorf("invalid params.action parameter, accepted values are: create, update, delete")
