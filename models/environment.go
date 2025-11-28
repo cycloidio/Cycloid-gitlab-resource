@@ -21,8 +21,6 @@ type EnvironmentFilter struct {
 type EnvironmentParams struct {
 	// Action define what to do on put steps, create, stop or delete.
 	Action string `json:"action"`
-	// Point to a directory containing the resource current metadata
-	MetadataDir *string `json:"metadata_dir"`
 
 	// Environments parameters
 
@@ -45,8 +43,6 @@ type EnvironmentParams struct {
 
 	// Stop actions parameters
 
-	// ID of the environment, only for update, delete and stop actions
-	ID *int `json:"id,omitempty"`
 	// For stop action, Force will force stop without executing on_stop action in gitlab
 	Force *bool `json:"force,omitempty"`
 

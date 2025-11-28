@@ -3,7 +3,7 @@ package environments
 import (
 	"fmt"
 	"net/http"
-	"path"
+	"slices"
 	"strconv"
 
 	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
@@ -13,11 +13,6 @@ import (
 )
 
 func (h Handler) Out(outDir string) error {
-	if h.cfg.Params.MetadataDir == nil {
-		return fmt.Errorf("missing metadata_dir parameter for PUT")
-	}
-	metadataDir := path.Join(outDir, *h.cfg.Params.MetadataDir)
-
 	client, err := gitlabclient.NewGitlabClient(&gitlabclient.GitlabConfig{
 		Token: h.cfg.Source.Token,
 		Url:   h.cfg.Source.ServerURL,
@@ -28,41 +23,45 @@ func (h Handler) Out(outDir string) error {
 
 	var output *models.Output
 	switch h.cfg.Params.Action {
-	case "create":
-		env, _, err := client.Environments.CreateEnvironment(h.cfg.Source.ProjectID, &gitlab.CreateEnvironmentOptions{
-			Name:                &h.cfg.Params.Name,
-			Description:         h.cfg.Params.Description,
-			ExternalURL:         h.cfg.Params.ExternalURL,
-			Tier:                h.cfg.Params.Tier,
-			ClusterAgentID:      h.cfg.Params.ClusterAgentID,
-			KubernetesNamespace: h.cfg.Params.KubernetesNamespace,
-			FluxResourcePath:    h.cfg.Params.FluxResourcePath,
-			AutoStopSetting:     h.cfg.Params.AutoStopSetting,
+	case "create", "update", "upsert":
+		envList, _, err := client.Environments.ListEnvironments(h.cfg.Source.ProjectID, &gitlab.ListEnvironmentsOptions{
+			Name: &h.cfg.Params.Name,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to create environment %q: %w", h.cfg.Params.Name, err)
+			return fmt.Errorf("failed to list current environments from the API: %w", err)
 		}
 
-		output = &models.Output{
-			Version:  EnvironmentToVersion(env),
-			Metadata: EnvironmentToMetadatas(env),
-		}
-
-	case "update":
-		env, _, err := client.Environments.EditEnvironment(
-			h.cfg.Source.ProjectID, *h.cfg.Params.ID,
-			&gitlab.EditEnvironmentOptions{
+		var env *gitlab.Environment
+		if len(envList) == 0 {
+			env, _, err = client.Environments.CreateEnvironment(h.cfg.Source.ProjectID, &gitlab.CreateEnvironmentOptions{
 				Name:                &h.cfg.Params.Name,
 				Description:         h.cfg.Params.Description,
+				ExternalURL:         h.cfg.Params.ExternalURL,
 				Tier:                h.cfg.Params.Tier,
-				AutoStopSetting:     h.cfg.Params.AutoStopSetting,
 				ClusterAgentID:      h.cfg.Params.ClusterAgentID,
 				KubernetesNamespace: h.cfg.Params.KubernetesNamespace,
-				ExternalURL:         h.cfg.Params.ExternalURL,
 				FluxResourcePath:    h.cfg.Params.FluxResourcePath,
+				AutoStopSetting:     h.cfg.Params.AutoStopSetting,
 			})
-		if err != nil {
-			return fmt.Errorf("failed to update env %q: %w", h.cfg.Params.Name, err)
+			if err != nil {
+				return fmt.Errorf("failed to create environment %q: %w", h.cfg.Params.Name, err)
+			}
+		} else {
+			env, _, err = client.Environments.EditEnvironment(
+				h.cfg.Source.ProjectID, envList[0].ID,
+				&gitlab.EditEnvironmentOptions{
+					Name:                &h.cfg.Params.Name,
+					Description:         h.cfg.Params.Description,
+					Tier:                h.cfg.Params.Tier,
+					AutoStopSetting:     h.cfg.Params.AutoStopSetting,
+					ClusterAgentID:      h.cfg.Params.ClusterAgentID,
+					KubernetesNamespace: h.cfg.Params.KubernetesNamespace,
+					ExternalURL:         h.cfg.Params.ExternalURL,
+					FluxResourcePath:    h.cfg.Params.FluxResourcePath,
+				})
+			if err != nil {
+				return fmt.Errorf("failed to update env %q with id %d: %w", envList[0].Name, envList[0].ID, err)
+			}
 		}
 
 		output = &models.Output{
@@ -70,15 +69,49 @@ func (h Handler) Out(outDir string) error {
 			Metadata: EnvironmentToMetadatas(env),
 		}
 	case "delete":
-		_, err := client.Environments.DeleteEnvironment(h.cfg.Source.ProjectID, *h.cfg.Params.ID)
+		var envID int
+		if h.cfg.Source.Environment.ID != nil {
+			id, err := strconv.ParseInt(*h.cfg.Source.Environment.ID, 10, 64)
+			if err != nil {
+				return fmt.Errorf("failed to cast env ID to int from %q: %w", *h.cfg.Source.Environment.ID, err)
+			}
+
+			envID = int(id)
+		} else {
+			envs, _, err := client.Environments.ListEnvironments(
+				h.cfg.Source.ProjectID, &gitlab.ListEnvironmentsOptions{
+					Name:   h.cfg.Source.Environment.Name,
+					Search: h.cfg.Source.Environment.Search,
+					States: h.cfg.Source.Environment.States,
+				})
+			if err != nil {
+				return fmt.Errorf("fail to find environment from API: %w", err)
+			}
+
+			if len(envs) == 0 {
+				// Delete is idempotent, if no env found, nothing to delete
+				return nil
+			}
+
+			i := slices.IndexFunc(envs, func(e *gitlab.Environment) bool {
+				return e.Name == *h.cfg.Source.Environment.Name
+			})
+			if i == -1 {
+				return fmt.Errorf("env to delete not found with parameters %v", h.cfg.Source.Environment)
+			}
+
+			envID = int(envs[i].ID)
+		}
+
+		_, err = client.Environments.DeleteEnvironment(h.cfg.Source.ProjectID, envID)
 		if err != nil {
-			return fmt.Errorf("failed to delete environment %q: %w", h.cfg.Params.Name, err)
+			return fmt.Errorf("failed to delete environment with id %d: %w", envID, err)
 		}
 
 		output = &models.Output{
 			Version: map[string]string{},
 			Metadata: models.Metadatas{
-				{Name: "id", Value: strconv.Itoa(int(*h.cfg.Params.ID))},
+				{Name: "id", Value: strconv.Itoa(envID)},
 				{Name: "state", Value: "deleted"},
 			},
 		}
@@ -118,13 +151,42 @@ func (h Handler) Out(outDir string) error {
 			Metadata: metadatas,
 		}
 	case "stop":
+		var envID int
+		if h.cfg.Source.Environment.ID != nil {
+			id, err := strconv.ParseInt(*h.cfg.Source.Environment.ID, 10, 64)
+			if err != nil {
+				return fmt.Errorf("failed to cast env ID to int from %q: %w", *h.cfg.Source.Environment.ID, err)
+			}
+
+			envID = int(id)
+		} else {
+			envs, _, err := client.Environments.ListEnvironments(
+				h.cfg.Source.ProjectID, &gitlab.ListEnvironmentsOptions{
+					Name:   h.cfg.Source.Environment.Name,
+					Search: h.cfg.Source.Environment.Search,
+					States: h.cfg.Source.Environment.States,
+				})
+			if err != nil {
+				return fmt.Errorf("fail to find environment from API: %w", err)
+			}
+
+			i := slices.IndexFunc(envs, func(e *gitlab.Environment) bool {
+				return e.Name == *h.cfg.Source.Environment.Name
+			})
+			if i == -1 {
+				return fmt.Errorf("env not found with parameters %v", h.cfg.Source.Environment)
+			}
+
+			envID = int(envs[i].ID)
+		}
+
 		env, _, err := client.Environments.StopEnvironment(
-			h.cfg.Source.ProjectID, *h.cfg.Params.ID,
+			h.cfg.Source.ProjectID, envID,
 			&gitlab.StopEnvironmentOptions{
 				Force: h.cfg.Params.Force,
 			})
 		if err != nil {
-			return fmt.Errorf("failed to stop env %q: %w", h.cfg.Params.Name, err)
+			return fmt.Errorf("failed to stop env id %d: %w", envID, err)
 		}
 
 		output = &models.Output{
@@ -160,11 +222,6 @@ func (h Handler) Out(outDir string) error {
 		}
 	default:
 		return fmt.Errorf("invalid params.action parameter, accepted values are: create, update, delete, delete_stopped, stop, stop_stale")
-	}
-
-	err = internal.WriteMetadata(metadataDir, output.Version)
-	if err != nil {
-		return err
 	}
 
 	return internal.OutputJSON(h.stdout, output)

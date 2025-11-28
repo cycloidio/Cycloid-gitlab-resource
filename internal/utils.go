@@ -44,6 +44,12 @@ func MustJSON(input any) string {
 }
 
 func WriteMetadata(outDir string, data any) error {
+	// In some cases, the metadata folder does not exists yet
+	err := os.MkdirAll(outDir, 0777)
+	if err != nil {
+		return fmt.Errorf("failed to create out directory %q: %w", outDir, err)
+	}
+
 	outJSON, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize data to JSON %v: %w", data, err)

@@ -9,7 +9,7 @@ lint:
 watch *cmd:
     watchexec -w . -w .justfile -e go -c -- just {{ cmd }}
 
-test:
+test: lint
     go test ./...
 
 build: test
@@ -20,14 +20,19 @@ build-release:
     CGO_ENABLED=0 go build -ldflags "-s -w" -o gitlab-resource
     upx gitlab-resource
 
-build-docker:
+docker-login:
+    cy get cy://org/cycloid/credentials/dockerhub-machine?key=.raw.raw.password \
+        | docker login --password-stdin \
+          -u "$(cy get cy://org/cycloid/credentials/dockerhub-machine?key=.raw.raw.login)"
+
+docker-build:
     docker build . --tag docker.io/cycloid/gitlab-resource:latest
 
-push-docker: build-docker
+docker-push: docker-build
     docker push cycloid/gitlab-resource:latest
 
-test-docker-check: build-docker
+test-docker-check: docker-build
     cat check_delta.json | docker run -i -a STDIN -a STDERR -a STDOUT --rm -v "$(pwd):/code" -w /code cycloid/gitlab-resource:latest /opt/resource/check
 
-test-docker-create: build-docker
+test-docker-create: docker-build
     cat create.json | docker run -i -a STDIN -a STDERR -a STDOUT --rm -v "$(pwd):/code" -w /code cycloid/gitlab-resource:latest /opt/resource/out .

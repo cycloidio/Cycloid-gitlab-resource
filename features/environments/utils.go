@@ -1,6 +1,10 @@
 package environments
 
 import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path"
 	"strconv"
 
 	"github.com/cycloidio/gitlab-resource/models"
@@ -16,12 +20,20 @@ func EnvironmentToVersion(env *gitlab.Environment) map[string]string {
 	version["external_url"] = env.ExternalURL
 	version["state"] = env.State
 	version["tier"] = env.Tier
-	version["created_at"] = env.CreatedAt.String()
-	version["updated_at"] = env.UpdatedAt.String()
-	version["auto_stop_at"] = env.AutoStopAt.String()
 	version["kubernetes_namespace"] = env.KubernetesNamespace
 	version["flux_resource_path"] = env.FluxResourcePath
 	version["auto_stop_settin"] = env.AutoStopSetting
+	if env.AutoStopAt != nil {
+		version["auto_stop_at"] = env.AutoStopAt.String()
+	}
+
+	if env.CreatedAt != nil {
+		version["created_at"] = env.CreatedAt.String()
+	}
+
+	if env.UpdatedAt != nil {
+		version["updated_at"] = env.UpdatedAt.String()
+	}
 
 	if env.LastDeployment != nil {
 		version["last_deployment_id"] = strconv.FormatInt(int64(env.LastDeployment.ID), 10)
@@ -49,4 +61,24 @@ func EnvironmentToMetadatas(env *gitlab.Environment) models.Metadatas {
 		{Name: "state", Value: env.State},
 		{Name: "external_url", Value: env.ExternalURL},
 	}
+}
+
+func ReadDataFromFile(metadataDir string) (*gitlab.Environment, error) {
+	metaFile := path.Join(metadataDir, "metadata.json")
+	var currentMetadata *gitlab.Environment
+	if _, err := os.Stat(metaFile); err == nil {
+		content, err := os.ReadFile(metaFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read current metadata file %q: %w", metaFile, err)
+		}
+
+		err = json.Unmarshal(content, &currentMetadata)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode current data as JSON from %q: %w", metaFile, err)
+		}
+	} else {
+		return nil, fmt.Errorf("failed to read current metadata, file not found at %q", metaFile)
+	}
+
+	return currentMetadata, nil
 }
