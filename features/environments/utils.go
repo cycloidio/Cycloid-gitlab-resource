@@ -63,6 +63,7 @@ func EnvironmentToMetadatas(env *gitlab.Environment) models.Metadatas {
 	}
 }
 
+// ReadDataFromFile will read the current metadata JSON contained in metadataDir
 func ReadDataFromFile(metadataDir string) (*gitlab.Environment, error) {
 	metaFile := path.Join(metadataDir, "metadata.json")
 	var currentMetadata *gitlab.Environment

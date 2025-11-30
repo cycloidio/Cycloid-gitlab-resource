@@ -69,6 +69,7 @@ func Ptr[T any](t T) *T {
 	return &t
 }
 
+// GetUser will fetch all the user's information from its userID
 func GetUser(userID int, client *gitlab.Client) (*gitlab.User, error) {
 	user, _, err := client.Users.GetUser(userID, gitlab.GetUsersOptions{}, nil)
 	if err != nil {
