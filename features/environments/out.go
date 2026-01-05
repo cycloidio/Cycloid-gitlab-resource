@@ -78,6 +78,10 @@ func (h Handler) Out(outDir string) error {
 
 			envID = int(id)
 		} else {
+			if h.cfg.Source.Environment.Name == nil {
+				return fmt.Errorf("missing environment name or ID, check source configuration")
+			}
+
 			envs, _, err := client.Environments.ListEnvironments(
 				h.cfg.Source.ProjectID, &gitlab.ListEnvironmentsOptions{
 					Name:   h.cfg.Source.Environment.Name,
@@ -160,6 +164,10 @@ func (h Handler) Out(outDir string) error {
 
 			envID = int(id)
 		} else {
+			if h.cfg.Source.Environment.Name == nil {
+				return fmt.Errorf("missing environment name or ID, check source configuration")
+			}
+
 			envs, _, err := client.Environments.ListEnvironments(
 				h.cfg.Source.ProjectID, &gitlab.ListEnvironmentsOptions{
 					Name:   h.cfg.Source.Environment.Name,
