@@ -14,6 +14,46 @@ In a pipeline:
     tag: latest
 ```
 
+### Merge request status
+
+This allows you to get a trigger when a merge request change to a specific state.
+
+#### Source
+
+```yaml
+resources:
+- name: merge_request_status
+  type: gitlab
+  source:
+    # base url to the gitlab server
+    server_url: "https://server_url.com"
+    # gitlab project id
+    project_id: "<project_id>"
+    # gitlab token, pat, group or project level with at least
+    # api, read api, write api permissions
+    token: "<token>"
+    # feature to use
+    feature: "merge_request_status"
+    merge_request_status:
+      # <required> merge_request_iid to watch
+      merge_request_iid: 1
+      # <required> filter the merge request status that will trigger
+      # Any of opened, closed, locked or merged.
+      state: ["closed", "merged"]
+```
+
+
+#### Get
+
+```yaml
+get: merge_request_status
+trigger: true # || false
+```
+
+#### Put
+
+No action implemented.
+
 ### Deployments
 
 #### Source
