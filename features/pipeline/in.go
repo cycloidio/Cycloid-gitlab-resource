@@ -14,7 +14,7 @@ import (
 func (h *Handler) In(outDir string) error {
 	metadataPath := path.Join(outDir, "metadata.json")
 
-	pipelineID, err := strconv.ParseInt(h.cfg.Version["id"], 10, 32)
+	pipelineID, err := strconv.ParseInt(h.cfg.Version["id"], 10, 64)
 	if err != nil {
 		return fmt.Errorf("missing id in version or bad id from %v: %w", h.cfg.Version, err)
 	}
