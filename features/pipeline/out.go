@@ -16,11 +16,29 @@ func (h *Handler) Out(outDir string) error {
 
 	switch h.cfg.Params.Action {
 	case models.ActionCreate:
+		pipelineInput := make(gitlab.PipelineInputsOption)
+		for key, value := range h.cfg.Params.Inputs {
+			switch v := value.(type) {
+			case string:
+				pipelineInput[key] = gitlab.NewPipelineInputValue(v)
+			case []string:
+				pipelineInput[key] = gitlab.NewPipelineInputValue(v)
+			case float64:
+				pipelineInput[key] = gitlab.NewPipelineInputValue(v)
+			case int:
+				pipelineInput[key] = gitlab.NewPipelineInputValue(v)
+			case bool:
+				pipelineInput[key] = gitlab.NewPipelineInputValue(v)
+			default:
+				return fmt.Errorf("invalid type %T for input with key: %q, only string, []string, bool, int and float accepted by gitlab api", v, key)
+			}
+		}
+
 		pipeline, _, err := h.glab.Pipelines.CreatePipeline(
 			h.cfg.Source.ProjectID, &gitlab.CreatePipelineOptions{
 				Ref:       &h.cfg.Params.Ref,
 				Variables: h.cfg.Params.Variables,
-				Inputs:    h.cfg.Params.Inputs,
+				Inputs:    pipelineInput,
 			},
 		)
 		if err != nil {
