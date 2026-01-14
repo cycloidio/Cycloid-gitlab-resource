@@ -51,7 +51,7 @@ func NewHandler(stdout, stderr io.Writer, input []byte) (*Handler, error) {
 	}
 
 	// we log on stdou since cc don't display stderr traces
-	logger := slog.New(slog.NewTextHandler(stdout, logOpt))
+	logger := slog.New(slog.NewTextHandler(stderr, logOpt))
 
 	return &Handler{
 		stdout: stdout,
