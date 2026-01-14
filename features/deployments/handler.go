@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	"github.com/cycloidio/gitlab-resource/models"
 )
 
@@ -18,6 +19,7 @@ type Handler struct {
 	stdout io.Writer
 	stderr io.Writer
 	cfg    *models.DeploymentInputs
+	glab   *gitlab.Client
 }
 
 func NewHandler(stdout, stderr io.Writer, input []byte) (*Handler, error) {
@@ -39,9 +41,18 @@ func NewHandler(stdout, stderr io.Writer, input []byte) (*Handler, error) {
 		return nil, fmt.Errorf("source.mode must one of those values: %s", strings.Join(AvailableModes, ", "))
 	}
 
+	glab, err := gitlabclient.NewGitlabClient(&gitlabclient.GitlabConfig{
+		Token: config.Source.Token,
+		Url:   config.Source.ServerURL,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize gitlab client: %w", err)
+	}
+
 	return &Handler{
 		stdout: stdout,
 		stderr: stderr,
 		cfg:    config,
+		glab:   glab,
 	}, nil
 }

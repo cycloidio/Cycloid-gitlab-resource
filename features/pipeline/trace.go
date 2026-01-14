@@ -8,26 +8,6 @@ import (
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
-type GitlabTrace struct {
-	ID       int               `json:"id"`
-	Status   string            `json:"status"`
-	Complete bool              `json:"complete"`
-	State    string            `json:"state"`
-	Lines    []GitlabTraceLine `json:"lines"`
-}
-
-type GitlabTraceLine struct {
-	Offset  int                      `json:"offset"`
-	Content []GitlabTraceLineContent `json:"content"`
-}
-
-type GitlabTraceLineContent struct {
-	Text      string    `json:"text"`
-	Style     string    `json:"style"`
-	Timestamp time.Time `json:"timestamp"`
-	Section   string    `json:"section"`
-}
-
 func (h *Handler) traceJob(job *gitlab.Job) error {
 	if job == nil {
 		return fmt.Errorf("missing job for tracing, job is nil")

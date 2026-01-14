@@ -6,25 +6,16 @@ import (
 	"slices"
 	"strconv"
 
-	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	"github.com/cycloidio/gitlab-resource/internal"
 	"github.com/cycloidio/gitlab-resource/models"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 func (h Handler) Out(outDir string) error {
-	client, err := gitlabclient.NewGitlabClient(&gitlabclient.GitlabConfig{
-		Token: h.cfg.Source.Token,
-		Url:   h.cfg.Source.ServerURL,
-	})
-	if err != nil {
-		return err
-	}
-
 	var output *models.Output
 	switch h.cfg.Params.Action {
 	case "create", "update", "upsert":
-		envList, _, err := client.Environments.ListEnvironments(h.cfg.Source.ProjectID, &gitlab.ListEnvironmentsOptions{
+		envList, _, err := h.glab.Environments.ListEnvironments(h.cfg.Source.ProjectID, &gitlab.ListEnvironmentsOptions{
 			Name: &h.cfg.Params.Name,
 		})
 		if err != nil {
@@ -33,7 +24,7 @@ func (h Handler) Out(outDir string) error {
 
 		var env *gitlab.Environment
 		if len(envList) == 0 {
-			env, _, err = client.Environments.CreateEnvironment(h.cfg.Source.ProjectID, &gitlab.CreateEnvironmentOptions{
+			env, _, err = h.glab.Environments.CreateEnvironment(h.cfg.Source.ProjectID, &gitlab.CreateEnvironmentOptions{
 				Name:                &h.cfg.Params.Name,
 				Description:         h.cfg.Params.Description,
 				ExternalURL:         h.cfg.Params.ExternalURL,
@@ -47,7 +38,7 @@ func (h Handler) Out(outDir string) error {
 				return fmt.Errorf("failed to create environment %q: %w", h.cfg.Params.Name, err)
 			}
 		} else {
-			env, _, err = client.Environments.EditEnvironment(
+			env, _, err = h.glab.Environments.EditEnvironment(
 				h.cfg.Source.ProjectID, envList[0].ID,
 				&gitlab.EditEnvironmentOptions{
 					Name:                &h.cfg.Params.Name,
@@ -82,7 +73,7 @@ func (h Handler) Out(outDir string) error {
 				return fmt.Errorf("missing environment name or ID, check source configuration")
 			}
 
-			envs, _, err := client.Environments.ListEnvironments(
+			envs, _, err := h.glab.Environments.ListEnvironments(
 				h.cfg.Source.ProjectID, &gitlab.ListEnvironmentsOptions{
 					Name:   h.cfg.Source.Environment.Name,
 					Search: h.cfg.Source.Environment.Search,
@@ -107,7 +98,7 @@ func (h Handler) Out(outDir string) error {
 			envID = int(envs[i].ID)
 		}
 
-		_, err = client.Environments.DeleteEnvironment(h.cfg.Source.ProjectID, envID)
+		_, err := h.glab.Environments.DeleteEnvironment(h.cfg.Source.ProjectID, envID)
 		if err != nil {
 			return fmt.Errorf("failed to delete environment with id %d: %w", envID, err)
 		}
@@ -131,7 +122,7 @@ func (h Handler) Out(outDir string) error {
 			Dry_run: gitlab.Ptr(false),
 		}
 
-		req, err := client.NewRequest(http.MethodDelete, url, payload, nil)
+		req, err := h.glab.NewRequest(http.MethodDelete, url, payload, nil)
 		if err != nil {
 			return fmt.Errorf("failed to build request: %w", err)
 		}
@@ -140,7 +131,7 @@ func (h Handler) Out(outDir string) error {
 			ScheduledEntries     []models.DeleteStoppedEntries `json:"scheduled_entries"`
 			UnprocessableEntries []models.DeleteStoppedEntries `json:"unprocessable_entries"`
 		}{}
-		_, err = client.Do(req, &response)
+		_, err = h.glab.Do(req, &response)
 		if err != nil {
 			return fmt.Errorf("failed to delete stopped environments: %w", err)
 		}
@@ -168,7 +159,7 @@ func (h Handler) Out(outDir string) error {
 				return fmt.Errorf("missing environment name or ID, check source configuration")
 			}
 
-			envs, _, err := client.Environments.ListEnvironments(
+			envs, _, err := h.glab.Environments.ListEnvironments(
 				h.cfg.Source.ProjectID, &gitlab.ListEnvironmentsOptions{
 					Name:   h.cfg.Source.Environment.Name,
 					Search: h.cfg.Source.Environment.Search,
@@ -188,7 +179,7 @@ func (h Handler) Out(outDir string) error {
 			envID = int(envs[i].ID)
 		}
 
-		env, _, err := client.Environments.StopEnvironment(
+		env, _, err := h.glab.Environments.StopEnvironment(
 			h.cfg.Source.ProjectID, envID,
 			&gitlab.StopEnvironmentOptions{
 				Force: h.cfg.Params.Force,
@@ -209,7 +200,7 @@ func (h Handler) Out(outDir string) error {
 			Before: h.cfg.Params.Before,
 		}
 
-		req, err := client.NewRequest(http.MethodDelete, url, payload, nil)
+		req, err := h.glab.NewRequest(http.MethodDelete, url, payload, nil)
 		if err != nil {
 			return fmt.Errorf("failed to build request: %w", err)
 		}
@@ -217,7 +208,7 @@ func (h Handler) Out(outDir string) error {
 		response := struct {
 			Message string `json:"message"`
 		}{}
-		_, err = client.Do(req, &response)
+		_, err = h.glab.Do(req, &response)
 		if err != nil {
 			return fmt.Errorf("failed to delete stopped environments: %w", err)
 		}
