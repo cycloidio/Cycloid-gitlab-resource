@@ -7,9 +7,9 @@ import (
 	"slices"
 	"strings"
 
-	gitlab "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	"github.com/cycloidio/gitlab-resource/models"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 var (

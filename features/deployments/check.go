@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/cycloidio/gitlab-resource/internal"
-	gitlab "gitlab.com/gitlab-org/api/h.glab-go"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 func (h Handler) Check() error {
