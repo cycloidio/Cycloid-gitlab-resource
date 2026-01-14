@@ -5,10 +5,11 @@ type Input struct {
 }
 
 type Source struct {
-	ProjectID string `json:"project_id"`
-	ServerURL string `json:"server_url"`
-	Feature   string `json:"feature"`
-	Token     string `json:"token"`
+	ProjectID string  `json:"project_id"`
+	ServerURL string  `json:"server_url"`
+	Feature   string  `json:"feature"`
+	Token     string  `json:"token"`
+	LogLevel  *string `json:"log_level,omitempty"`
 }
 
 type Output struct {

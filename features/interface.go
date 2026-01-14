@@ -8,6 +8,7 @@ import (
 	"github.com/cycloidio/gitlab-resource/features/deployments"
 	"github.com/cycloidio/gitlab-resource/features/environments"
 	"github.com/cycloidio/gitlab-resource/features/mergerequeststatus"
+	"github.com/cycloidio/gitlab-resource/features/pipeline"
 )
 
 var (
@@ -15,6 +16,7 @@ var (
 		"deployments",
 		"environments",
 		"merge_request_status",
+		"pipelines",
 	}
 )
 
@@ -40,6 +42,8 @@ func NewFeatureHandler(stdout, stderr io.Writer, feature string, input []byte) (
 		return environments.NewHandler(stdout, stderr, input)
 	case "merge_request_status":
 		return mergerequeststatus.NewHandler(stdout, stderr, input)
+	case "pipeline", "pipelines":
+		return pipeline.NewHandler(stdout, stderr, input)
 	default:
 		return nil, fmt.Errorf("feature %q does not exists, available ones are: %v", feature, AvailableFeatures)
 	}

@@ -14,6 +14,68 @@ In a pipeline:
     tag: latest
 ```
 
+### Pipelines
+
+Use this feature to trigger pipelines.
+
+#### Source
+
+```yaml
+resources:
+- name: merge_request_status
+  type: gitlab
+  source:
+    # base url to the gitlab server
+    server_url: "https://server_url.com"
+    # gitlab project id
+    project_id: "<project_id>"
+    # gitlab token, pat, group or project level with at least
+    # api, read api, write api permissions
+    token: "<token>"
+    # Log level of the resource on pipeline trigger
+    log_level: "debug" | "info" | "warning" | "error"
+    # feature to use
+    feature: "pipelines"
+    pipeline:
+      # <optional> define what happends on check, only get available.
+      # will fetch the latest pipeline
+      check_mode: "get"
+      # <option> the ref when using check `get` mode
+      ref: "main"
+```
+
+### Get
+
+Fetch pipeline metadatas
+
+```
+- get: pipeline
+```
+
+### Put
+
+Trigger a pipeline:
+
+```
+- put: pipeline
+  params:
+    action: "create"
+
+    # git ref to use for the pipeline
+    ref: "main"
+
+    # Pipeline variables
+    variables:
+    - key: "my_var"
+      value: "hello world"
+      variable_type: "file" | "env_var"
+
+    # pipeline inputs
+    inputs:
+      key: "value"
+      any: true
+```
+
 ### Merge request status
 
 This allows you to get a trigger when a merge request change to a specific state.
