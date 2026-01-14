@@ -5,27 +5,18 @@ import (
 	"slices"
 	"strconv"
 
-	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	"github.com/cycloidio/gitlab-resource/internal"
-	gitlab "gitlab.com/gitlab-org/api/client-go"
+	gitlab "gitlab.com/gitlab-org/api/h.glab-go"
 )
 
 func (h Handler) Check() error {
-	client, err := gitlabclient.NewGitlabClient(&gitlabclient.GitlabConfig{
-		Token: h.cfg.Source.Token,
-		Url:   h.cfg.Source.ServerURL,
-	})
-	if err != nil {
-		return err
-	}
-
 	var options = &gitlab.ListProjectDeploymentsOptions{
 		Sort:        gitlab.Ptr("desc"), // version should be oldest first
 		Environment: h.cfg.Source.Environment,
 		Status:      h.cfg.Source.Status,
 	}
 
-	deployments, _, err := client.Deployments.ListProjectDeployments(h.cfg.Source.ProjectID, options, nil)
+	deployments, _, err := h.glab.Deployments.ListProjectDeployments(h.cfg.Source.ProjectID, options, nil)
 	if err != nil {
 		return fmt.Errorf("failed to fetch deployments from gitlab API: %w", err)
 	}

@@ -7,10 +7,9 @@ import (
 	"path"
 	"strconv"
 
-	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	"github.com/cycloidio/gitlab-resource/internal"
 	"github.com/cycloidio/gitlab-resource/models"
-	gitlab "gitlab.com/gitlab-org/api/client-go"
+	gitlab "gitlab.com/gitlab-org/api/h.glab-go"
 )
 
 func (h Handler) Out(outDir string) error {
@@ -19,17 +18,9 @@ func (h Handler) Out(outDir string) error {
 	}
 	metadataPath := path.Join(outDir, *h.cfg.Params.MetadataDir, "metadata.json")
 
-	client, err := gitlabclient.NewGitlabClient(&gitlabclient.GitlabConfig{
-		Token: h.cfg.Source.Token,
-		Url:   h.cfg.Source.ServerURL,
-	})
-	if err != nil {
-		return err
-	}
-
 	switch h.cfg.Params.Action {
 	case "create":
-		deploy, _, err := client.Deployments.CreateProjectDeployment(
+		deploy, _, err := h.glab.Deployments.CreateProjectDeployment(
 			h.cfg.Source.ProjectID, &gitlab.CreateProjectDeploymentOptions{
 				Environment: h.cfg.Source.Environment,
 				SHA:         h.cfg.Params.SHA,
@@ -110,7 +101,7 @@ func (h Handler) Out(outDir string) error {
 			return fmt.Errorf("failed to parse deployment id %q: %w", deployIDStr, err)
 		}
 
-		updatedDeploy, _, err := client.Deployments.UpdateProjectDeployment(
+		updatedDeploy, _, err := h.glab.Deployments.UpdateProjectDeployment(
 			h.cfg.Source.ProjectID, int(deployID), &gitlab.UpdateProjectDeploymentOptions{
 				Status: (*gitlab.DeploymentStatusValue)(&h.cfg.Params.Status),
 			},
@@ -129,7 +120,7 @@ func (h Handler) Out(outDir string) error {
 			return fmt.Errorf("failed to parse user id %q: %w", userIDStr, err)
 		}
 
-		user, err := internal.GetUser(int(userID), client)
+		user, err := internal.GetUser(int(userID), h.glab)
 		if err != nil {
 			return err
 		}
@@ -214,7 +205,7 @@ func (h Handler) Out(outDir string) error {
 			return fmt.Errorf("failed to parse deployment id %q: %w", deployIDStr, err)
 		}
 
-		_, err = client.Deployments.DeleteProjectDeployment(h.cfg.Source.ProjectID, int(deployID), nil)
+		_, err = h.glab.Deployments.DeleteProjectDeployment(h.cfg.Source.ProjectID, int(deployID), nil)
 		if err != nil {
 			return fmt.Errorf("failed to update deployment with id %q: %w", deployIDStr, err)
 		}

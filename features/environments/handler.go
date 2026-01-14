@@ -5,13 +5,16 @@ import (
 	"fmt"
 	"io"
 
+	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	"github.com/cycloidio/gitlab-resource/models"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 type Handler struct {
 	stderr io.Writer
 	stdout io.Writer
 	cfg    *models.EnvironmentInputs
+	glab   *gitlab.Client
 }
 
 func NewHandler(stdout, stderr io.Writer, input []byte) (*Handler, error) {
@@ -21,9 +24,18 @@ func NewHandler(stdout, stderr io.Writer, input []byte) (*Handler, error) {
 		return nil, fmt.Errorf("failed to serialize input config from JSON %s: %w", string(input), err)
 	}
 
+	glab, err := gitlabclient.NewGitlabClient(&gitlabclient.GitlabConfig{
+		Token: config.Source.Token,
+		Url:   config.Source.ServerURL,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize gitlab client: %w", err)
+	}
+
 	return &Handler{
 		stdout: stdout,
 		stderr: stderr,
 		cfg:    config,
+		glab:   glab,
 	}, nil
 }

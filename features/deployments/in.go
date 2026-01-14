@@ -7,7 +7,6 @@ import (
 	"path"
 	"strconv"
 
-	gitlabclient "github.com/cycloidio/gitlab-resource/clients/gitlab"
 	"github.com/cycloidio/gitlab-resource/internal"
 	"github.com/cycloidio/gitlab-resource/models"
 )
@@ -24,21 +23,12 @@ func (h Handler) In(outDir string) error {
 		return fmt.Errorf("failed to write version to output dir %q: %w", outDir, err)
 	}
 
-	// Get the full user payload to get the user email
-	client, err := gitlabclient.NewGitlabClient(&gitlabclient.GitlabConfig{
-		Token: h.cfg.Source.Token,
-		Url:   h.cfg.Source.ServerURL,
-	})
-	if err != nil {
-		return err
-	}
-
 	deployID, err := strconv.ParseInt(h.cfg.Version["id"], 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to cast current deployment id %q: %w", h.cfg.Version["id"], err)
 	}
 
-	deploy, _, err := client.Deployments.GetProjectDeployment(h.cfg.Source.ProjectID, int(deployID))
+	deploy, _, err := h.glab.Deployments.GetProjectDeployment(h.cfg.Source.ProjectID, int(deployID))
 	if err != nil {
 		return fmt.Errorf("failed to fetch deployment with id %q: %w", h.cfg.Version["id"], err)
 	}
@@ -67,7 +57,7 @@ func (h Handler) In(outDir string) error {
 			return fmt.Errorf("failed to parse user id %q: %w", userIDStr, err)
 		}
 
-		user, err := internal.GetUser(int(userID), client)
+		user, err := internal.GetUser(int(userID), h.glab)
 		if err != nil {
 			return err
 		}
