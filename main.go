@@ -67,7 +67,7 @@ func main() {
 func run(action string, cmd *cobra.Command, outDir *string) error {
 	stdin := cmd.InOrStdin()
 	stdout := cmd.OutOrStdout()
-	stderr := cmd.OutOrStdout()
+	stderr := cmd.OutOrStderr()
 
 	in, err := io.ReadAll(stdin)
 	if err != nil {
@@ -88,17 +88,19 @@ func run(action string, cmd *cobra.Command, outDir *string) error {
 	switch action {
 	case "check":
 		return handler.Check()
+
 	case "in":
 		if outDir == nil {
 			return fmt.Errorf("outDir argument is missing")
 		}
 		return handler.In(*outDir)
+
 	case "out":
 		if outDir == nil {
 			return fmt.Errorf("outDir argument is missing")
 		}
-
 		return handler.Out(*outDir)
+
 	default:
 		return fmt.Errorf("invalid action %q, allowed ones are: check, in, out", action)
 	}
