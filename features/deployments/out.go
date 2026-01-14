@@ -9,7 +9,7 @@ import (
 
 	"github.com/cycloidio/gitlab-resource/internal"
 	"github.com/cycloidio/gitlab-resource/models"
-	gitlab "gitlab.com/gitlab-org/api/h.glab-go"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
 func (h Handler) Out(outDir string) error {
