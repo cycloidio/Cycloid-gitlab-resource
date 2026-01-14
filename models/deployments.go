@@ -3,7 +3,7 @@ package models
 type DeploymentInputs struct {
 	Source  DeploymentSource
 	Version map[string]string `json:"version"`
-	Params  *ParamDeployments `json:"params,omitempty"`
+	Params  *DeploymentParams `json:"params,omitempty"`
 }
 
 type DeploymentSource struct {
@@ -13,7 +13,7 @@ type DeploymentSource struct {
 	Environment *string `json:"environment,omitempty"`
 }
 
-type ParamDeployments struct {
+type DeploymentParams struct {
 	Action      string  `json:"action"`
 	SHA         *string `json:"sha,omitempty"`
 	Ref         *string `json:"ref,omitempty"`

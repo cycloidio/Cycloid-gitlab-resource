@@ -1,7 +1,7 @@
 build_dir := "./build"
 
 playground: lint build
-    ./gitlab-resource check < test.json
+    ./gitlab-resource out . < test.json
 
 lint:
     go vet
