@@ -42,5 +42,5 @@ type PipelineParams struct {
 	// Ref from git, required
 	Ref       string `json:"ref"`
 	Variables *[]*gitlab.PipelineVariableOptions
-	Inputs    gitlab.PipelineInputsOption
+	Inputs    map[string]any
 }

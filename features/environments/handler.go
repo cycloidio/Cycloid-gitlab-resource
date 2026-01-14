@@ -18,7 +18,7 @@ func NewHandler(stdout, stderr io.Writer, input []byte) (*Handler, error) {
 	var config *models.EnvironmentInputs
 	err := json.Unmarshal(input, &config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to serialize input config from JSON: %b: %w", input, err)
+		return nil, fmt.Errorf("failed to serialize input config from JSON %s: %w", string(input), err)
 	}
 
 	return &Handler{
