@@ -10,7 +10,7 @@ In a pipeline:
 - name: "gitlab"
   type: registry-image
   source:
-    repository: <resource/repository>
+    repository: cycloid/gitlab-resource
     tag: latest
 ```
 
