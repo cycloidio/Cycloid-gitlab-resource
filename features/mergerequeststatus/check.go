@@ -26,8 +26,8 @@ func (h *Handler) Check() error {
 	}
 
 	if slices.Contains(h.cfg.Source.MergeRequestStatus.State, models.MergeRequestState(mr.State)) || len(h.cfg.Source.MergeRequestStatus.State) == 0 {
-		return internal.OutputJSON(h.stdout, MergeRequestToVersion(mr))
+		return internal.OutputJSON(h.stdout, []map[string]string{MergeRequestToVersion(mr)})
 	}
 
-	return internal.OutputJSON(h.stdout, map[string]string{})
+	return internal.OutputJSON(h.stdout, []map[string]string{})
 }
