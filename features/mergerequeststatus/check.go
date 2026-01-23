@@ -29,5 +29,5 @@ func (h *Handler) Check() error {
 		return internal.OutputJSON(h.stdout, MergeRequestToVersion(mr))
 	}
 
-	return nil
+	return internal.OutputJSON(h.stdout, map[string]string{})
 }
