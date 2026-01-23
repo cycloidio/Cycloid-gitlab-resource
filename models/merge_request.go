@@ -17,8 +17,10 @@ const (
 )
 
 type MergeRequestFilter struct {
-	MergeRequestIID int `json:"merge_request_iid"`
-	State           []MergeRequestState
+	// MergeRequestID requires the Gitlab merge request ID (not IID)
+	MergeRequestID int `json:"merge_request_id"`
+	// State filter which state will produce a version
+	State []MergeRequestState
 }
 
 type MergeRequestInputs struct {

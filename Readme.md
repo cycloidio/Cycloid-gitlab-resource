@@ -97,8 +97,8 @@ resources:
     # feature to use
     feature: "merge_request_status"
     merge_request_status:
-      # <required> merge_request_iid to watch
-      merge_request_iid: 1
+      # <required> merge_request_id to watch
+      merge_request_id: 1
       # <required> filter the merge request status that will trigger
       # Any of opened, closed, locked or merged.
       state: ["closed", "merged"]
