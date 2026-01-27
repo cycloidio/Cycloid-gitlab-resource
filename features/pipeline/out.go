@@ -34,15 +34,33 @@ func (h *Handler) Out(outDir string) error {
 			}
 		}
 
-		pipeline, _, err := h.glab.Pipelines.CreatePipeline(
-			h.cfg.Source.ProjectID, &gitlab.CreatePipelineOptions{
-				Ref:       &h.cfg.Params.Ref,
-				Variables: h.cfg.Params.Variables,
-				Inputs:    pipelineInput,
-			},
-		)
-		if err != nil {
-			return fmt.Errorf("failed to trigger pipeline with ref %q: %w", h.cfg.Params.Ref, err)
+		var pipeline *gitlab.Pipeline
+		var err error
+		if h.cfg.Params.MergeRequest != nil {
+			ppInfo, _, err := h.glab.MergeRequests.CreateMergeRequestPipeline(
+				h.cfg.Source.ProjectID, *h.cfg.Params.MergeRequest,
+			)
+			if err != nil {
+				return fmt.Errorf("failed to trigger pipeline for merge request %q: %w", *h.cfg.Params.MergeRequest, err)
+			}
+
+			pipeline, _, err = h.glab.Pipelines.GetPipeline(ppInfo.ProjectID, ppInfo.ID)
+			if err != nil {
+				return fmt.Errorf("failed to fetch pipeline info for merge request pipeline %q: %w", ppInfo.ID, err)
+			}
+		} else if h.cfg.Params.Ref != nil {
+			pipeline, _, err = h.glab.Pipelines.CreatePipeline(
+				h.cfg.Source.ProjectID, &gitlab.CreatePipelineOptions{
+					Ref:       h.cfg.Params.Ref,
+					Variables: h.cfg.Params.Variables,
+					Inputs:    pipelineInput,
+				},
+			)
+			if err != nil {
+				return fmt.Errorf("failed to trigger pipeline with ref %q: %w", *h.cfg.Params.Ref, err)
+			}
+		} else {
+			return fmt.Errorf("Either params.pipeline.merge_request or params.pipeline.ref is required to trigger a pipeline.")
 		}
 
 		h.logger.Info("Created pipeline succeeded", "id", pipeline.ID, "url", pipeline.WebURL)

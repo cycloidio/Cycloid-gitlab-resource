@@ -39,8 +39,12 @@ type PipelineParams struct {
 
 	// For create action
 
-	// Ref from git, required
-	Ref       string `json:"ref"`
+	// Either Ref or MergeRequest is required
+	// Ref from git
+	Ref *string `json:"ref"`
+	// Merge request
+	MergeRequest *string `json:"merge_request"`
+
 	Variables *[]*gitlab.PipelineVariableOptions
 	Inputs    map[string]any
 }
