@@ -61,7 +61,7 @@ func (h *Handler) Out(outDir string) error {
 				return fmt.Errorf("failed to trigger pipeline with ref %q: %w", *h.cfg.Params.Ref, err)
 			}
 		} else {
-			return fmt.Errorf("Either params.pipeline.merge_request or params.pipeline.ref is required to trigger a pipeline.")
+			return fmt.Errorf("Either params.pipeline.merge_request_iid or params.pipeline.ref is required to trigger a pipeline")
 		}
 
 		h.logger.Info("Created pipeline succeeded", "id", pipeline.ID, "url", pipeline.WebURL)
