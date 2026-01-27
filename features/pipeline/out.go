@@ -36,12 +36,12 @@ func (h *Handler) Out(outDir string) error {
 
 		var pipeline *gitlab.Pipeline
 		var err error
-		if h.cfg.Params.MergeRequest != nil {
+		if h.cfg.Params.MergeRequestID != nil {
 			ppInfo, _, err := h.glab.MergeRequests.CreateMergeRequestPipeline(
-				h.cfg.Source.ProjectID, *h.cfg.Params.MergeRequest,
+				h.cfg.Source.ProjectID, *h.cfg.Params.MergeRequestID,
 			)
 			if err != nil {
-				return fmt.Errorf("failed to trigger pipeline for merge request %q: %w", *h.cfg.Params.MergeRequest, err)
+				return fmt.Errorf("failed to trigger pipeline for merge request %q: %w", *h.cfg.Params.MergeRequestID, err)
 			}
 
 			pipeline, _, err = h.glab.Pipelines.GetPipeline(ppInfo.ProjectID, ppInfo.ID)
