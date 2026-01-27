@@ -13,13 +13,13 @@ func (h *Handler) Check() error {
 	var options = &gitlab.GetMergeRequestsOptions{}
 	mr, _, err := h.glab.MergeRequests.GetMergeRequest(
 		h.cfg.Source.ProjectID,
-		h.cfg.Source.MergeRequestStatus.MergeRequestID,
+		h.cfg.Source.MergeRequestStatus.MergeRequestIID,
 		options,
 	)
 	if err != nil {
 		return fmt.Errorf(
 			"failed to get mr with iid %d and project id %q from API: %w",
-			h.cfg.Source.MergeRequestStatus.MergeRequestID,
+			h.cfg.Source.MergeRequestStatus.MergeRequestIID,
 			h.cfg.Source.ProjectID,
 			err,
 		)

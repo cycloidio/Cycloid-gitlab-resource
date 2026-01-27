@@ -61,8 +61,12 @@ Trigger a pipeline:
   params:
     action: "create"
 
+    # You can trigger a pipeline from a ref or a merge request id (for mr pipelines)
+    # You need to fill one of them
     # git ref to use for the pipeline
     ref: "main"
+    # merge request iid from the project
+    merge_request_iid: 2
 
     # Pipeline variables
     variables:
@@ -97,8 +101,8 @@ resources:
     # feature to use
     feature: "merge_request_status"
     merge_request_status:
-      # <required> merge_request_id to watch
-      merge_request_id: 1
+      # <required> merge_request_iid to watch
+      merge_request_iid: 1
       # <required> filter the merge request status that will trigger
       # Any of opened, closed, locked or merged.
       state: ["closed", "merged"]
