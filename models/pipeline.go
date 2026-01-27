@@ -41,9 +41,9 @@ type PipelineParams struct {
 
 	// Either Ref or MergeRequest is required
 	// Ref from git
-	Ref *string `json:"ref"`
+	Ref *string `json:"ref,omitempty"`
 	// Merge request IID
-	MergeRequestIID *int `json:"merge_request_iid"`
+	MergeRequestIID *int `json:"merge_request_iid,omitempty"`
 
 	Variables *[]*gitlab.PipelineVariableOptions
 	Inputs    map[string]any
