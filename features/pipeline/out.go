@@ -8,7 +8,6 @@ import (
 
 	"github.com/cycloidio/gitlab-resource/internal"
 	"github.com/cycloidio/gitlab-resource/models"
-	"github.com/sanity-io/litter"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
 )
 
@@ -39,7 +38,6 @@ func (h *Handler) Out(outDir string) error {
 		var pipeline *gitlab.Pipeline
 		var err error
 		if h.cfg.Params.MergeRequestIID != nil {
-			h.logger.Debug("trigger mr pipeline", "id", h.cfg.Params.MergeRequestIID, "project", h.cfg.Source.ProjectID)
 			ppInfo, _, err := h.glab.MergeRequests.CreateMergeRequestPipeline(
 				h.cfg.Source.ProjectID, *h.cfg.Params.MergeRequestIID,
 			)
@@ -76,20 +74,10 @@ func (h *Handler) Out(outDir string) error {
 				return fmt.Errorf("failed to get pipeline status for %q: %w", strconv.Itoa(pipeline.ID), err)
 			}
 			pipelineStatus = pipeline.Status
-			h.logger.Debug("pipeline", "status", pipelineStatus)
 
 			// list the pending jobs of the current pipeline
 			jobsPending, _, err := h.glab.Jobs.ListPipelineJobs(h.cfg.Source.ProjectID, pipeline.ID,
 				nil,
-				// &gitlab.ListJobsOptions{
-				// 	ListOptions: gitlab.ListOptions{},
-				// 	Scope: &[]gitlab.BuildStateValue{
-				// 		gitlab.Running,
-				// 		gitlab.Pending,
-				// 		gitlab.Preparing,
-				// 		gitlab.Created,
-				// 	},
-				// },
 			)
 			if err != nil {
 				return fmt.Errorf("failed to list jobs from pipeline %q: %w", strconv.Itoa(pipeline.ID), err)
@@ -102,7 +90,6 @@ func (h *Handler) Out(outDir string) error {
 			}
 
 			for _, bridge := range jobsTriggerBridges {
-				litter.D(bridge)
 				if bridge.DownstreamPipeline == nil {
 					h.logger.Debug("trigger job not started yet", "status", bridge.Status, "downstream pipeline", bridge.DownstreamPipeline)
 					continue
@@ -112,7 +99,6 @@ func (h *Handler) Out(outDir string) error {
 				if err != nil {
 					return fmt.Errorf("failed to list jobs from child pipeline: %w", err)
 				}
-				litter.D(childJobs)
 
 				jobsPending = append(jobsPending, childJobs...)
 			}
