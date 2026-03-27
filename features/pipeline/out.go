@@ -3,6 +3,7 @@ package pipeline
 import (
 	"fmt"
 	"path"
+	"slices"
 	"strconv"
 
 	"github.com/cycloidio/gitlab-resource/internal"
@@ -37,7 +38,6 @@ func (h *Handler) Out(outDir string) error {
 		var pipeline *gitlab.Pipeline
 		var err error
 		if h.cfg.Params.MergeRequestIID != nil {
-			h.logger.Debug("trigger mr pipeline", "id", h.cfg.Params.MergeRequestIID, "project", h.cfg.Source.ProjectID)
 			ppInfo, _, err := h.glab.MergeRequests.CreateMergeRequestPipeline(
 				h.cfg.Source.ProjectID, *h.cfg.Params.MergeRequestIID,
 			)
@@ -61,31 +61,53 @@ func (h *Handler) Out(outDir string) error {
 				return fmt.Errorf("failed to trigger pipeline with ref %q: %w", *h.cfg.Params.Ref, err)
 			}
 		} else {
-			return fmt.Errorf("Either params.pipeline.merge_request_iid or params.pipeline.ref is required to trigger a pipeline")
+			return fmt.Errorf("either params.pipeline.merge_request_iid or params.pipeline.ref is required to trigger a pipeline")
 		}
 
-		h.logger.Info("Created pipeline succeeded", "id", pipeline.ID, "url", pipeline.WebURL)
+		h.logger.Info("create pipeline succeeded", "id", pipeline.ID, "url", pipeline.WebURL)
 
-		for {
-			jobsPending, _, err := h.glab.Jobs.ListPipelineJobs(h.cfg.Source.ProjectID, pipeline.ID, &gitlab.ListJobsOptions{
-				Scope: &[]gitlab.BuildStateValue{
-					gitlab.Running,
-					gitlab.Pending,
-					gitlab.Preparing,
-					gitlab.Created,
-				},
-			})
+		pipelineStatus := pipeline.Status
+		for !slices.Contains([]string{"success", "failed", "canceled", "skipped", "manual"}, pipelineStatus) {
+			// watch and refresh pipeline status
+			pipeline, _, err := h.glab.Pipelines.GetPipeline(h.cfg.Source.ProjectID, pipeline.ID)
+			if err != nil {
+				return fmt.Errorf("failed to get pipeline status for %q: %w", strconv.Itoa(pipeline.ID), err)
+			}
+			pipelineStatus = pipeline.Status
+
+			// list the pending jobs of the current pipeline
+			jobsPending, _, err := h.glab.Jobs.ListPipelineJobs(h.cfg.Source.ProjectID, pipeline.ID,
+				nil,
+			)
 			if err != nil {
 				return fmt.Errorf("failed to list jobs from pipeline %q: %w", strconv.Itoa(pipeline.ID), err)
 			}
 
-			jobsRunning, _, err := h.glab.Jobs.ListPipelineJobs(h.cfg.Source.ProjectID, pipeline.ID, &gitlab.ListJobsOptions{
-				Scope: &[]gitlab.BuildStateValue{
-					gitlab.Running,
-				},
-			})
+			// List jobs that trigger child pipelines
+			jobsTriggerBridges, _, err := h.glab.Jobs.ListPipelineBridges(h.cfg.Source.ProjectID, pipeline.ID, &gitlab.ListJobsOptions{})
 			if err != nil {
-				return fmt.Errorf("failed to list jobs from pipeline %q: %w", strconv.Itoa(pipeline.ID), err)
+				return fmt.Errorf("failed to list trigger jobs from pipeline %q: %w", strconv.Itoa(pipeline.ID), err)
+			}
+
+			for _, bridge := range jobsTriggerBridges {
+				if bridge.DownstreamPipeline == nil {
+					h.logger.Debug("trigger job not started yet", "status", bridge.Status, "downstream pipeline", bridge.DownstreamPipeline)
+					continue
+				}
+
+				childJobs, _, err := h.glab.Jobs.ListPipelineJobs(bridge.DownstreamPipeline.ProjectID, bridge.DownstreamPipeline.ID, &gitlab.ListJobsOptions{})
+				if err != nil {
+					return fmt.Errorf("failed to list jobs from child pipeline: %w", err)
+				}
+
+				jobsPending = append(jobsPending, childJobs...)
+			}
+
+			var jobsRunning = []*gitlab.Job{}
+			for _, job := range jobsPending {
+				if job.Status == "running" {
+					jobsRunning = append(jobsRunning, job)
+				}
 			}
 
 			jobNames := make([]string, len(jobsPending))
@@ -94,17 +116,18 @@ func (h *Handler) Out(outDir string) error {
 			}
 			h.logger.Debug("Jobs pending", "jobs", jobNames)
 
-			if len(jobsPending) == 0 {
-				h.logger.Debug("jobs are done", "jobs", jobsPending)
-				break
-			}
-
 			for _, job := range jobsRunning {
 				err := h.traceJob(job)
 				if err != nil {
 					return fmt.Errorf("failed to fetch logs for job %q: %w", job.Name, err)
 				}
 			}
+		}
+
+		// refresh the status
+		pipeline, _, err = h.glab.Pipelines.GetPipeline(h.cfg.Source.ProjectID, pipeline.ID)
+		if err != nil {
+			return fmt.Errorf("failed to get pipeline status for %q: %w", strconv.Itoa(pipeline.ID), err)
 		}
 
 		output := &models.Output{

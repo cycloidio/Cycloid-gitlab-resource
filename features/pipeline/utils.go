@@ -16,7 +16,6 @@ func PipelinetoVersion(pipeline *gitlab.Pipeline) map[string]string {
 	version["ref"] = pipeline.Ref
 	version["status"] = pipeline.Status
 	version["web_url"] = pipeline.WebURL
-	version["before_sha"] = pipeline.BeforeSHA
 	version["tag"] = strconv.FormatBool(pipeline.Tag)
 	if pipeline.CreatedAt != nil {
 		version["created_at"] = pipeline.CreatedAt.String()
@@ -39,7 +38,6 @@ func PipelinetoMetadatas(pipeline *gitlab.Pipeline) models.Metadatas {
 		{Name: "ref", Value: pipeline.Ref},
 		{Name: "status", Value: pipeline.Status},
 		{Name: "web_url", Value: pipeline.WebURL},
-		{Name: "before_sha", Value: pipeline.BeforeSHA},
 		{Name: "tag", Value: strconv.FormatBool(pipeline.Tag)},
 	}
 	if pipeline.CreatedAt != nil {
